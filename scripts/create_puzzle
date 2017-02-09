@@ -2,15 +2,10 @@
 
 import argparse
 import os.path
-parser = argparse.ArgumentParser(description="Create puzzle pieces from input image by random shuffling. Maximum possible rectangle is cropped from original image.",
-                                 formatter_class=argparse.RawTextHelpFormatter)
 
-
-parser.add_argument("image", type=str, help="Input image.")
-parser.add_argument("--piece-side", type=int, default=28,
-                    help="Side of puzzle piece.\nMin:    20 px\nMax:    64 px\nDefault 28 px")
-
-args = parser.parse_args()
+MIN_PIECE_SIDE     = 16
+MAX_PIECE_SIDE     = 64
+DEFAULT_PIECE_SIDE = 28
 
 def print_error_messages(errors):
     print
@@ -18,16 +13,33 @@ def print_error_messages(errors):
         print "\033[31m[ERROR]\033[0m {0}".format(message)
     exit()
 
-errors = []
+def validate_arguments(args):
+    errors = []
 
-if not os.path.isfile(args.image):
-    errors.append("Image does not exist.")
+    if not os.path.isfile(args.image):
+        errors.append("Image does not exist.")
 
-if args.piece_side < 20:
-    errors.append("Minimum piece side is 20 px.")
+    if args.piece_side < 20:
+        errors.append("Minimum piece side is {0} px.".format(MIN_PIECE_SIDE))
 
-if args.piece_side > 64:
-    errors.append("Maximum piece side is 64 px.")
+    if args.piece_side > 64:
+        errors.append("Maximum piece side is {0} px.".format(MAX_PIECE_SIDE))
 
-if len(errors) > 0:
-    print_error_messages(errors)
+    if len(errors) > 0:
+        print_error_messages(errors)
+
+def main():
+    parser = argparse.ArgumentParser(description="Create puzzle pieces from input image by random shuffling. Maximum possible rectangle is cropped from original image.",
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument("image", type=str, help="Input image.")
+    parser.add_argument("--piece-side", type=int, default=28,
+                        help="Side of puzzle piece.\nMin:    {0} px\nMax:    {1} px\nDefault {2} px".format(MIN_PIECE_SIDE,
+                                                                                                            MAX_PIECE_SIDE,
+                                                                                                            DEFAULT_PIECE_SIDE))
+
+    args = parser.parse_args()
+    validate_arguments(args)
+
+if __name__ == "__main__":
+    main()
