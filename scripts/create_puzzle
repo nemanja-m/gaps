@@ -2,44 +2,83 @@
 
 import argparse
 import os.path
+import numpy as np
 
-MIN_PIECE_SIDE     = 16
-MAX_PIECE_SIDE     = 64
-DEFAULT_PIECE_SIDE = 28
+from scipy import misc
 
-def print_error_messages(errors):
+MIN_PIECE_SIZE     = 16
+MAX_PIECE_SIZE     = 64
+DEFAULT_PIECE_SIZE = 28
+
+ERROR_MESSAGE   = "\033[31m[ERROR]\033[0m {0}"
+SUCCESS_MESSAGE = "\033[32m[SUCCESS]\033[0m {0}"
+
+def create_puzzle(image_path, output_path, piece_size):
+    image = misc.imread(image_path)
+    rows, columns = image.shape[0] // piece_size, image.shape[1] // piece_size
+
+    pieces = []
+
+    # Crop pieces from original image
+    for y in range(rows):
+        for x in range(columns):
+            left, top, w, h = y * piece_size, x * piece_size, (y + 1) * piece_size, (x + 1) * piece_size
+            piece = np.empty((piece_size, piece_size, 3))
+            piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
+
+            pieces.append(piece)
+
+    # Randomize pieces in order to make puzzle
+    np.random.shuffle(pieces)
+
+    # Create puzzle by stacking pieces
+    vertical_stack = []
+    for i in range(rows):
+        horizontal_stack = []
+        for j in range(columns):
+            horizontal_stack.append(pieces[i * columns + j])
+
+        vertical_stack.append(np.hstack(horizontal_stack))
+
+    puzzle = np.vstack(vertical_stack).astype(np.uint8)
+    misc.imsave(output_path, puzzle)
+    print_messages(["Puzzle created with {} pieces".format(len(pieces))])
+
+def print_messages(messages, level="SUCCESS"):
     print
-    for message in errors:
-        print "\033[31m[ERROR]\033[0m {0}".format(message)
-    exit()
+
+    for message in messages:
+        print eval(level + "_MESSAGE").format(message)
+
+    if level == "ERROR":
+        exit()
 
 def validate_arguments(args):
     errors = []
 
-    if not os.path.isfile(args.image):
+    if not os.path.isfile(args.source):
         errors.append("Image does not exist.")
 
-    if args.piece_side < 20:
-        errors.append("Minimum piece side is {0} px.".format(MIN_PIECE_SIDE))
+    if args.piece_size < MIN_PIECE_SIZE:
+        errors.append("Minimum piece size is {0} px.".format(MIN_PIECE_SIZE))
 
-    if args.piece_side > 64:
-        errors.append("Maximum piece side is {0} px.".format(MAX_PIECE_SIDE))
+    if args.piece_size > MAX_PIECE_SIZE:
+        errors.append("Maximum piece size is {0} px.".format(MAX_PIECE_SIZE))
 
     if len(errors) > 0:
-        print_error_messages(errors)
+        print_messages(errors, level="ERROR")
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create puzzle pieces from input image by random shuffling. Maximum possible rectangle is cropped from original image.",
                                      formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument("image", type=str, help="Input image.")
-    parser.add_argument("--piece-side", type=int, default=28,
-                        help="Side of puzzle piece.\nMin:    {0} px\nMax:    {1} px\nDefault {2} px".format(MIN_PIECE_SIDE,
-                                                                                                            MAX_PIECE_SIDE,
-                                                                                                            DEFAULT_PIECE_SIDE))
-
+    parser.add_argument("source", type=str, help="Input image.")
+    parser.add_argument("--destination", type=str, default="./out.jpg", help="Path to the output file.")
+    parser.add_argument("--piece-size", type=int, default=28,
+                        help="side of puzzle piece.\nMin:    {0} px\nMax:    {1} px\nDefault {2} px".format(MIN_PIECE_SIZE,
+                                                                                                            MAX_PIECE_SIZE,
+                                                                                                            DEFAULT_PIECE_SIZE))
     args = parser.parse_args()
     validate_arguments(args)
 
-if __name__ == "__main__":
-    main()
+    create_puzzle(args.source, args.destination, args.piece_size)
