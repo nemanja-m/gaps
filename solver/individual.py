@@ -1,4 +1,5 @@
 import numpy as np
+import helpers
 
 class Individual:
     """Class representing possible solution to puzzle.
@@ -18,9 +19,9 @@ class Individual:
     """
 
     def __init__(self, pieces, rows, columns):
-        self.pieces     = pieces
-        self.rows       = rows
-        self.columns    = columns
+        self.pieces  = pieces[:]
+        self.rows    = rows
+        self.columns = columns
 
         np.random.shuffle(self.pieces)
 
@@ -28,7 +29,13 @@ class Individual:
         return self.pieces[key * self.columns : (key + 1) * self.columns]
 
     def piece_size(self):
+        """Returns single piece size"""
+
         if len(self.pieces) > 0:
             return self.pieces[0].shape[0]
         else:
             return -1
+
+    def to_image(self):
+        """Converts individual to showable image"""
+        return helpers.assemble_image(self.pieces, self.rows, self.columns)
