@@ -22,6 +22,7 @@ class Individual:
         self.pieces  = pieces[:]
         self.rows    = rows
         self.columns = columns
+        self.fitness = None
 
         np.random.shuffle(self.pieces)
 
