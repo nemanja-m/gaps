@@ -1,43 +1,64 @@
 import numpy as np
 
-def dissimilarity_measure(first_piece, second_piece, position="LR"):
-    """Calculates color difference over all neighboring pixels over all color channels.
+def flatten_image(image, piece_size):
+    """Converts image into list of square pieces.
 
-    The dissimilarity measure relies on the premise that adjacent jigsaw pieces in the original image tend to share
-    similar colors along their abutting edges, i.e., the sum (over all neighboring pixels) of squared color differences (over all
-    three color bands) should be minimal. Let pieces pi , pj be represented in normalized L*a*b* space by corresponding
-    W × W × 3 matrices, where W is the height/width of each piece (in pixels).
+    Input image is divided into square pieces of specified size and than
+    flattened into list. Eacch list element is PIECE_SIZE x PIECE_SIZE x 3
 
-    :params first_piece:  First input piece for calculation.
-    :params second_piece: Second input piece for calculation.
-    :params position:     How input pieces are positioned.
-
-                          LR => 'Left - Right'
-                          TD => 'Top - Down'
+    :params image:      Input image.
+    :params piece_size: Size of single square piece. Each piece is PIECE_SIZE x PIECE_SIZE
 
     Usage::
 
-        >>> from helpers import dissimilarity_measure
-        >>> dissimilarity_measure(p1, p2, position="TD")
+        >>> from helpers import flatten_image
+        >>> flat_image = flatten_image(image, 32)
 
     """
 
-    rows, columns    = first_piece.shape
-    color_difference = None
+    rows, columns = image.shape[0] // piece_size, image.shape[1] // piece_size
 
-    # | L | - | R |
-    if position == "LR":
-        color_difference = first_piece[0:rows, columns - 1, 0:3] - second_piece[0:rows, 0, 0:3]
+    pieces = []
 
-    # | T |
-    #   |
-    # | D |
-    if position == "TD":
-        color_difference = first_piece[rows - 1, 0:columns, 0:3] - second_piece[0, 0:columns, 0:3]
+    # Crop pieces from original image
+    for y in range(rows):
+        for x in range(columns):
+            left, top, w, h = y * piece_size, x * piece_size, (y + 1) * piece_size, (x + 1) * piece_size
 
-    squared_color_difference = np.power(color_difference, 2)
-    color_difference_per_row = np.sum(squared_color_difference, axis=1)
-    total_difference         = np.sum(color_difference_per_row, axis=0)
+            piece = np.empty((piece_size, piece_size, 3))
+            piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
 
-    return np.sqrt(total_difference)
+            pieces.append(piece)
+
+    return pieces, rows, columns
+
+def assemble_image(pieces, rows, columns):
+    """Assembles image from pieces.
+
+    Given an array of pieces and desired image dimensions, function
+    assembles image by stacking pieces.
+
+    :params pieces:  Image pieces as an array.
+    :params rows:    Number of rows in resulting image.
+    :params columns: Number of columns in resulting image.
+
+    Usage::
+
+        >>> from helpers import assemble_image
+        >>> from helpers import flatten_image
+        >>> pieces, rows, cols = flatten_image(image, 32)
+        >>> original_img = assemble_image(pieces, rows, cols)
+
+    """
+
+    vertical_stack = []
+
+    for i in range(rows):
+        horizontal_stack = []
+        for j in range(columns):
+            horizontal_stack.append(pieces[i * columns + j])
+
+        vertical_stack.append(np.hstack(horizontal_stack))
+
+    return np.vstack(vertical_stack).astype(np.uint8)
 

@@ -3,8 +3,13 @@
 import argparse
 import os.path
 import numpy as np
+import sys
 
-from scipy import misc
+sys.path.append("./")
+
+from scipy  import misc
+from solver import helpers
+
 
 MIN_PIECE_SIZE     = 16
 MAX_PIECE_SIZE     = 64
@@ -14,33 +19,16 @@ ERROR_MESSAGE   = "\033[31m[ERROR]\033[0m {0}"
 SUCCESS_MESSAGE = "\033[32m[SUCCESS]\033[0m {0}"
 
 def create_puzzle(image_path, output_path, piece_size):
-    image = misc.imread(image_path)
-    rows, columns = image.shape[0] // piece_size, image.shape[1] // piece_size
+    image  = misc.imread(image_path)
 
-    pieces = []
-
-    # Crop pieces from original image
-    for y in range(rows):
-        for x in range(columns):
-            left, top, w, h = y * piece_size, x * piece_size, (y + 1) * piece_size, (x + 1) * piece_size
-            piece = np.empty((piece_size, piece_size, 3))
-            piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
-
-            pieces.append(piece)
+    pieces, rows, columns = helpers.flatten_image(image, piece_size)
 
     # Randomize pieces in order to make puzzle
     np.random.shuffle(pieces)
 
     # Create puzzle by stacking pieces
-    vertical_stack = []
-    for i in range(rows):
-        horizontal_stack = []
-        for j in range(columns):
-            horizontal_stack.append(pieces[i * columns + j])
+    puzzle = helpers.assemble_image(pieces, rows, columns)
 
-        vertical_stack.append(np.hstack(horizontal_stack))
-
-    puzzle = np.vstack(vertical_stack).astype(np.uint8)
     misc.imsave(output_path, puzzle)
     print_messages(["Puzzle created with {} pieces".format(len(pieces))])
 
