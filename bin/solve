@@ -5,40 +5,14 @@ import sys
 sys.path.append("./")
 
 from scipy  import misc
-
-from solver import helpers
-from solver import fitness
-from solver.individual import Individual
-
-def create_population(problem, population_size):
-    return [Individual(problem) for i in range(population_size)]
-
-def start_evolution(problem, population_size=1000, generations_number=100):
-    population = create_population(population_size)
-
-    for generation in range(generations_number):
-        new_population = []
-
-        # Parallelize this !
-        map(fitness.evaluate, population)
-
-        while len(new_population) <= population_size:
-            first_parent  = select_parent(population)
-            second_parent = select_parent(population)
-            child         = crossover(first_parent, second_parent)
-
-            new_population.append(child)
-
-        population = new_population
-
-    return best_individual(population)
+from solver.algorithm import start_evolution
 
 def main():
 
     # Parse args
 
-    # May the odds be in your favor
-    solution = start_evolution(population_size, generations_number)
+    # Let the games begin! And may the odds be in your favor!
+    solution = start_evolution(problem, population_size, generations_number)
 
     misc.imshow(solution.to_image())
 
