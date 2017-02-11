@@ -51,7 +51,7 @@ def dissimilarity_measure(first_piece, second_piece, position="LR"):
 
     """
 
-    rows, columns    = first_piece.shape
+    rows, columns, _ = first_piece.shape
     color_difference = None
 
     # | L | - | R |
@@ -69,3 +69,4 @@ def dissimilarity_measure(first_piece, second_piece, position="LR"):
     total_difference         = np.sum(color_difference_per_row, axis=0)
 
     return np.sqrt(total_difference)
+
