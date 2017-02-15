@@ -1,4 +1,5 @@
 import numpy as np
+from solver.cache import DissimilarityMeasureCache
 
 def evaluate(individual):
     """Evaluates fitness value for given individual.
@@ -25,11 +26,11 @@ def evaluate(individual):
     # For each two adjancent pieces in columns
     for i in range(individual.rows - 1):
         for j in range(individual.columns):
-            fitness_value += dissimilarity_measure(individual[i][j], individual[i + 1][j])
+            fitness_value += dissimilarity_measure(individual[i][j], individual[i + 1][j], orientation="TD")
 
     individual.fitness = fitness_value
 
-def dissimilarity_measure(first_piece, second_piece, position="LR"):
+def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     """Calculates color difference over all neighboring pixels over all color channels.
 
     The dissimilarity measure relies on the premise that adjacent jigsaw pieces in the original image tend to share
@@ -47,26 +48,37 @@ def dissimilarity_measure(first_piece, second_piece, position="LR"):
     Usage::
 
         >>> from fitnes import dissimilarity_measure
-        >>> dissimilarity_measure(p1, p2, position="TD")
+        >>> dissimilarity_measure(p1, p2, orientation="TD")
 
     """
 
-    rows, columns, _ = first_piece.shape
+    ids = [first_piece.id, second_piece.id]
+
+    # Return cached value if it exists
+    if DissimilarityMeasureCache.contains(ids, orientation):
+        return DissimilarityMeasureCache.get(ids, orientation)
+
+    rows, columns, _ = first_piece.shape()
     color_difference = None
 
     # | L | - | R |
-    if position == "LR":
-        color_difference = first_piece[0:rows, columns - 1, 0:3] - second_piece[0:rows, 0, 0:3]
+    if orientation == "LR":
+        color_difference = first_piece[0:rows, columns - 1, 0:3] / 255 - second_piece[0:rows, 0, 0:3] / 255
 
     # | T |
     #   |
     # | D |
-    if position == "TD":
-        color_difference = first_piece[rows - 1, 0:columns, 0:3] - second_piece[0, 0:columns, 0:3]
+    if orientation == "TD":
+        color_difference = first_piece[rows - 1, 0:columns, 0:3] / 255 - second_piece[0, 0:columns, 0:3] / 255
 
     squared_color_difference = np.power(color_difference, 2)
     color_difference_per_row = np.sum(squared_color_difference, axis=1)
     total_difference         = np.sum(color_difference_per_row, axis=0)
 
-    return np.sqrt(total_difference)
+    value = np.sqrt(total_difference)
+
+    # Cache calculated dissimilarity measure
+    DissimilarityMeasureCache.put(ids, orientation, value)
+
+    return value
 

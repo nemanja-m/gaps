@@ -1,6 +1,7 @@
 import numpy as np
+from solver.models import Piece
 
-def flatten_image(image, piece_size):
+def flatten_image(image, piece_size, indexed=False):
     """Converts image into list of square pieces.
 
     Input image is divided into square pieces of specified size and than
@@ -8,6 +9,7 @@ def flatten_image(image, piece_size):
 
     :params image:      Input image.
     :params piece_size: Size of single square piece. Each piece is PIECE_SIZE x PIECE_SIZE
+    :params indexed:    If True list of Pieces with IDs will be returned, otherwise just plain list of ndarray pieces
 
     Usage::
 
@@ -29,6 +31,9 @@ def flatten_image(image, piece_size):
             piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
 
             pieces.append(piece)
+
+    if indexed == True:
+        pieces = [Piece(value, index) for index, value in enumerate(pieces)]
 
     return pieces, rows, columns
 
