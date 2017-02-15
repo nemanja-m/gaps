@@ -10,9 +10,10 @@ from solver.algorithm import start_evolution
 def main():
 
     # Parse args
+    image = misc.imread("out.jpg")
 
     # Let the games begin! And may the odds be in your favor!
-    solution = start_evolution(problem, population_size, generations_number)
+    solution = start_evolution(image)
 
     misc.imshow(solution.to_image())
 
