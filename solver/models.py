@@ -34,15 +34,37 @@ class Individual:
 
     def piece_size(self):
         """Returns single piece size"""
-        if len(self.pieces) > 0:
-            return self.pieces[0].size
-        else:
-            return -1
+        return self.pieces[0].size
 
     def to_image(self):
         """Converts individual to showable image"""
         pieces = [piece.image for piece in self.pieces]
         return helpers.assemble_image(pieces, self.rows, self.columns)
+
+    def edges(self, piece):
+        """Returns edges as tuple for a given piece
+
+        Return value is a tuple (top, right, down, left) where each value in a tuple
+        is ID of a joint piece or None if there are no edges on that side.
+
+        i.e. For a top left piece return value will be something like (None, 1, 2, None)
+
+        Usage::
+
+            >>> ind = Individual(...)
+            >>> ind.edges(ind.pieces[0])
+            >>> (None, 1, 2, None)
+
+        """
+
+        edge_index = self.piece_mapping[piece.id]
+
+        left  = self.pieces[edge_index - 1].id            if edge_index % self.columns > 0 else None
+        right = self.pieces[edge_index + 1].id            if edge_index % self.columns < self.columns - 1 else None
+        top   = self.pieces[edge_index - self.columns].id if edge_index >= self.columns else None
+        down  = self.pieces[edge_index + self.columns].id if edge_index < (self.rows - 1) * self.columns else None
+
+        return top, right, down, left
 
 class Piece:
     """Represents single jigsaw puzzle piece.
