@@ -25,4 +25,5 @@ def select(population):
 
     return population[selected_index]
 
-
+def crossover(first_parent, second_parent):
+    print "TODO"
