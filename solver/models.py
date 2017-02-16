@@ -49,6 +49,8 @@ class Individual:
 
         i.e. For a top left piece return value will be something like (None, 1, 2, None)
 
+        :params piece: Piece's ID as source of the edges.
+
         Usage::
 
             >>> ind = Individual(...)
@@ -57,14 +59,26 @@ class Individual:
 
         """
 
-        edge_index = self.piece_mapping[piece.id]
+        edge_index = self.piece_mapping[piece]
+        edges = []
 
-        left  = self.pieces[edge_index - 1].id            if edge_index % self.columns > 0 else None
-        right = self.pieces[edge_index + 1].id            if edge_index % self.columns < self.columns - 1 else None
-        top   = self.pieces[edge_index - self.columns].id if edge_index >= self.columns else None
-        down  = self.pieces[edge_index + self.columns].id if edge_index < (self.rows - 1) * self.columns else None
+        # Top edge
+        if edge_index >= self.columns:
+            edges.append((piece.id, self.pieces[edge_index - self.columns].id, "T"))
 
-        return top, right, down, left
+        # Right edge
+        if edge_index % self.columns < self.columns - 1:
+            edges.append((piece.id, self.pieces[edge_index + 1].id), "R")
+
+        # Down edge
+        if edge_index < (self.rows - 1) * self.columns:
+            edges.append((piece.id, self.pieces[edge_index + self.columns].id, "D"))
+
+        # Left edge
+        if edge_index % self.columns > 0:
+            edges.append((piece.id, self.pieces[edge_index - 1].id, "L"))
+
+        return edges
 
 class Piece:
     """Represents single jigsaw puzzle piece.
