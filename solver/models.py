@@ -1,6 +1,8 @@
 import numpy as np
 import helpers
 
+from solver.fitness import dissimilarity_measure
+
 class Individual:
     """Class representing possible solution to puzzle.
 
@@ -64,21 +66,58 @@ class Individual:
 
         # Top edge
         if edge_index >= self.columns:
-            edges.append((piece.id, self.pieces[edge_index - self.columns].id, "T"))
+            edge_piece = self.pieces[edge_index - self.columns].id
+            weight     = dissimilarity_measure(edge_piece, piece.id, orientation="TD")
+
+            edges.append((piece.id, edge_piece, "T", weight))
 
         # Right edge
         if edge_index % self.columns < self.columns - 1:
-            edges.append((piece.id, self.pieces[edge_index + 1].id), "R")
+            edge_piece = self.pieces[edge_index + 1].id
+            weight     = dissimilarity_measure(piece.id, edge_piece, orientation="LR")
+
+            edges.append((piece.id, edge_piece, "R", weight))
 
         # Down edge
         if edge_index < (self.rows - 1) * self.columns:
-            edges.append((piece.id, self.pieces[edge_index + self.columns].id, "D"))
+            edge_piece = self.pieces[edge_index + self.columns].id
+            weight     = dissimilarity_measure(piece.id, edge_piece, orientation="TD")
+
+            edges.append((piece.id, edge_piece, "D", weight))
 
         # Left edge
         if edge_index % self.columns > 0:
-            edges.append((piece.id, self.pieces[edge_index - 1].id, "L"))
+            edge_piece = self.pieces[edge_index - 1].id
+            weight     = dissimilarity_measure(edge_piece, piece.id, orientation="LR")
+
+            edges.append((piece.id, edge_piece, "L", weight))
 
         return edges
+
+    def best_buddies(self, first_piece, second_piece):
+        """For two adjacent pieces returns if they are best buddies
+
+        Two pieces are said to be best-buddies if each piece considers the other
+        as its most compatible piece according to the compatibility measure defined
+
+        :params first_piece:  First buddy.
+        :params second_piece: Second buddy.
+
+        Usage::
+
+            >>> ind = Individual(...)
+            >>> ind.best_buddies(1, 2)
+            >>> True
+
+        """
+
+        fp_edges = self.edges[first_piece]
+        sp_edges = self.edges[second_piece]
+
+        fp_best_buddy = min(fp_edges, key=lambda edge: edge[3])[1]
+        sp_best_buddy = min(sp_edges, key=lambda edge: edge[3])[1]
+
+        return fp_best_buddy == second_piece and sp_best_buddy == first_piece
 
 class Piece:
     """Represents single jigsaw puzzle piece.
