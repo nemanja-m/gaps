@@ -1,6 +1,9 @@
 import random
 import bisect
-import heapq
+import sys
+
+from pqdict import minpq
+from solver.models import Individual
 
 def select(population):
     """Roulette wheel selection.
@@ -18,7 +21,7 @@ def select(population):
 
     """
 
-    fitnesses             = [individual.fitness for individual in population]
+    fitnesses             = [100 / individual.fitness for individual in population]
     probability_intervals = [sum(fitnesses[:i+1]) for i in range(len(fitnesses))]
 
     random_select  = random.uniform(0, probability_intervals[-1])
@@ -28,104 +31,130 @@ def select(population):
 
 def crossover(first_parent, second_parent):
     child_pieces    = {}
-    available_edges = []
-    visited_nodes   = {}
+    taken_positions = set()
+    recommended_taken = set()
+    unreached_pieces = []
 
-    fp_edges = {}
-    sp_edges = {}
+    # Initialize recommended positions with root piece
+    root = first_parent.pieces[int(random.uniform(0, len(first_parent.pieces)))]
+    recommended_positions = { root.id: ((0, 0), "first") }
+    recommended_taken.add((0, 0))
 
-    current_piece = first_parent.pieces[0]
+    min_row  = 0
+    max_row  = 0
+    min_column  = 0
+    max_column  = 0
 
-    rows, columns = 1, 1
-    child_pieces[current_piece.id] = (0, 0)
+    # Initialize priority queue
+    priority_queue = minpq()
 
-    # Parents edges are maps where keys are pieces IDs and values are maps with edge's IDs
-    # as a key and edge position as a value (Top, Right, Down, Left)
-    fp_edges[current_piece.id] = possible_edges(current_piece.id, first_parent, visited_edges)
-    sp_edges[current_piece.id] = possible_edges(current_piece.id, second_parent, visited_edges)
+    for index in range(first_parent.rows * first_parent.columns):
+        priority_queue[index] = float("inf")
 
-    # We are looking for an edge appearing in both parents
-    edge, piece = select_shared_edge(fp_edges, sp_edges)
+    priority_queue[root.id] = 0
 
-    edge, piece = select_best_buddy_edge(fp_edges sp_edges)
+    for selected, value in priority_queue.popitems():
+        if value == float('inf'):
+            unreached_pieces.append(selected)
+            continue
 
-    # TODO Remove selected edge from pool ov edges
-    # TODO Remove piece from dictionary if it doesn't have any more edges left
+        child_pieces[selected] = recommended_positions[selected]
+        taken_positions.add(recommended_positions[selected][0])
 
-    if (edge, piece) != (None, None):
-        relative_position = child_pieces[piece]
+        edges = unvisited_edges(selected, first_parent, second_parent, visited=child_pieces)
 
-        offset = 0
+        for src, dst, orientation, weight, parent in edges:
+            relative_position = child_pieces[selected][0]
 
-        if position == "T":
-            offset = (-1, 0)
-        elif position == "R":
-            offset = (0, 1)
-        elif position == "D":
-            offset = (1, 0)
+            offset = 0
+
+            if orientation == "T":
+                offset = (-1, 0)
+            elif orientation == "R":
+                offset = (0, 1)
+            elif orientation == "D":
+                offset = (1, 0)
+            else:
+                offset = (0, -1)
+
+            row, column = tuple(map(sum, zip(relative_position, offset)))
+
+            if (row, column) in taken_positions:
+                continue
+
+            if (row, column) in recommended_taken:
+                continue
+
+            if abs(min(min_row, row)) + abs(max(max_row, row)) >= first_parent.rows:
+                continue
+
+            if abs(min(min_column, column)) + abs(max(max_column, column)) >= first_parent.columns:
+                continue
+
+            min_row = min(min_row, row)
+            max_row = max(max_row, row)
+            min_column = min(min_column, column)
+            max_column = max(max_column, column)
+
+            if shared_edge(src, dst, orientation, first_parent, second_parent):
+                recommended_positions[dst] = ((row, column), parent)
+                recommended_taken.add((row, column))
+
+                priority_queue[dst] = -float("inf")
+                continue
+
+            if best_buddy_edge(src, dst, parent, first_parent, second_parent):
+                recommended_positions[dst] = ((row, column), parent)
+                recommended_taken.add((row, column))
+                priority_queue[dst] = -sys.maxint
+                continue
+
+            if priority_queue[dst] > weight:
+                recommended_positions[dst] = ((row, column), parent)
+                recommended_taken.add((row, column))
+                priority_queue[dst] = weight
+
+    pieces = [None] * (first_parent.rows * first_parent.columns)
+
+    for piece, ((row, column), parent) in child_pieces.iteritems():
+        index = (row - min_row) * first_parent.columns + (column - min_column)
+
+        if parent == "first":
+            pieces[index] = first_parent.piece_by_id(piece)
         else:
-            offset = (0, -1)
+            pieces[index] = second_parent.piece_by_id(piece)
 
-        # New position for selected edge
-        child_pieces[edge] = tuple(map(sum, zip(relative_position, offset)))
+    if len(unreached_pieces) > 0:
+        for idx, element in enumerate(pieces):
+            if element == None:
+                piece_id = unreached_pieces.pop()
+                #  pieces[idx] = Piece(np.zeros((64,64,3), np.uint8), piece_id)
+                pieces[idx] = second_parent.piece_by_id(piece_id)
 
-        fp_edges[edge] = possible_edges(edge, first_parent, child_pieces)
-        sp_edges[edge] = possible_edges(edge, second_parent, child_pieces)
+    return Individual(pieces, first_parent.rows, first_parent.columns, shuffle=False)
 
-    return edges
+def shared_edge(src, dst, orientation, first_parent, second_parent):
+    return (first_parent.contains_edge(src, dst, orientation) and
+            second_parent.contains_edge(src, dst, orientation))
 
-def select_shared_edge(fp_edges, sp_edges):
-    """Finds shared edges between parents"""
-    for piece, edges in fp_edges.iteritems():
-        for edge, position in edges.iteritems():
-            # Edge is present in both parents
-            if edge in sp_edges[piece] and sp_edges[piece][edge] == position:
-                return edge, piece
+def best_buddy_edge(src, dst, parent, first_parent, second_parent):
+    if parent == "first":
+        return first_parent.best_buddies(src, dst)
+    else:
+        return second_parent.best_buddies(src, dst)
 
-    return None, None
 
-def select_best_buddy_edge(first_parent, fp_edges, second_parent, sp_edges):
-    """Finds best-buddy edge in curent kernel"""
+def unvisited_edges(piece, first_parent, second_parent, visited):
+    """Returns all unvisited edges for a given piece from both parents"""
+    fp_edges = []
+    for src, dst, orientation, weight in first_parent.edges(piece):
+        if not dst in visited:
+            fp_edges.append((src, dst, orientation, weight, "first"))
 
-    # Looking in first parent
-    for piece, edges in fp_edges.iteritems():
-        for edge, position in edges.iteritems():
-            # Given pieces are best buddies
-            if first_parent.best_buddies(piece, edge):
-                return edge, piece
+    sp_edges = []
+    for src, dst, orientation, weight in second_parent.edges(piece):
+        if not dst in visited:
+            sp_edges.append((src, dst, orientation, weight, "second"))
 
-    # Looking in second parent
-    for piece, edges in sp_edges.iteritems():
-        for edge, position in edges.iteritems():
-            # Given pieces are best buddies
-            if second_parent.best_buddies(piece, edge):
-                return edge, piece
-
-    return None, None
-
-def possible_edges(piece, parent, visited_edges):
-    """Returns dictionary where keys are piece IDs and values are edge orientation
-
-    Piece's IDs that are not previously visited are returned as a dictionary.
-
-    i.e.
-
-    {
-        1: "L",
-        2: "R"
-    }
-
-    :param piece: Source piece for selected edges.
-    :param parent: Individual containing given pieces.
-    :param visited_edges: Dictionary with information about visited edges.
-
-    Usage::
-
-        >>> possible_edges(1, parent, visited_edges)
-        >>> { 2: "R", 42: "T" }
-
-    """
-
-    edges = [edge for edge in parent.edges(piece) if not edge[1] in visited_edges]
-    return { edge[1]: edge[2] for edge in edges }
+    return fp_edges + sp_edges
 
