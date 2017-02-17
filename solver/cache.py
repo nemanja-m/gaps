@@ -100,12 +100,12 @@ class DissimilarityMeasureCache:
     @classmethod
     def hit_ratio(cls):
         """Percentage of successful lookups"""
-        return (100 * cls.hits) / cls.total_lookups()
+        return (100. * cls.hits) / cls.total_lookups()
 
     @classmethod
     def miss_ratio(cls):
         """Percentage of unsuccessful lookups"""
-        return (100 * cls.misses) / cls.total_lookups()
+        return (100. * cls.misses) / cls.total_lookups()
 
     @classmethod
     def reset_stats(cls):
