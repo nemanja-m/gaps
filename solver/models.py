@@ -20,13 +20,14 @@ class Individual:
 
     """
 
-    def __init__(self, pieces, rows, columns):
+    def __init__(self, pieces, rows, columns, shuffle=True):
         self.pieces  = pieces[:]
         self.rows    = rows
         self.columns = columns
         self.fitness = None
 
-        np.random.shuffle(self.pieces)
+        if shuffle:
+            np.random.shuffle(self.pieces)
 
         # Map piece ID to index in Individual's list
         self.piece_mapping = {piece.id: index for index, piece in enumerate(self.pieces)}
@@ -37,6 +38,9 @@ class Individual:
     def piece_size(self):
         """Returns single piece size"""
         return self.pieces[0].size
+
+    def piece_by_id(self, identifier):
+        return self.pieces[self.piece_mapping[identifier]]
 
     def to_image(self):
         """Converts individual to showable image"""
@@ -67,32 +71,36 @@ class Individual:
         # Top edge
         if edge_index >= self.columns:
             edge_piece = self.pieces[edge_index - self.columns].id
-            weight     = dissimilarity_measure(edge_piece, piece.id, orientation="TD")
+            weight     = dissimilarity_measure(self.piece_by_id(edge_piece), self.piece_by_id(piece), orientation="TD")
 
-            edges.append((piece.id, edge_piece, "T", weight))
+            edges.append((piece, edge_piece, "T", weight))
 
         # Right edge
         if edge_index % self.columns < self.columns - 1:
             edge_piece = self.pieces[edge_index + 1].id
-            weight     = dissimilarity_measure(piece.id, edge_piece, orientation="LR")
+            weight     = dissimilarity_measure(self.piece_by_id(piece), self.piece_by_id(edge_piece), orientation="LR")
 
-            edges.append((piece.id, edge_piece, "R", weight))
+            edges.append((piece, edge_piece, "R", weight))
 
         # Down edge
         if edge_index < (self.rows - 1) * self.columns:
             edge_piece = self.pieces[edge_index + self.columns].id
-            weight     = dissimilarity_measure(piece.id, edge_piece, orientation="TD")
+            weight     = dissimilarity_measure(self.piece_by_id(piece), self.piece_by_id(edge_piece), orientation="TD")
 
-            edges.append((piece.id, edge_piece, "D", weight))
+            edges.append((piece, edge_piece, "D", weight))
 
         # Left edge
         if edge_index % self.columns > 0:
             edge_piece = self.pieces[edge_index - 1].id
-            weight     = dissimilarity_measure(edge_piece, piece.id, orientation="LR")
+            weight     = dissimilarity_measure(self.piece_by_id(edge_piece), self.piece_by_id(piece), orientation="LR")
 
-            edges.append((piece.id, edge_piece, "L", weight))
+            edges.append((piece, edge_piece, "L", weight))
 
         return edges
+
+    def contains_edge(self, src, dst, orientation):
+        edges = [edge for edge in self.edges(src) if edge[1] == dst and edge[2] == orientation]
+        return len(edges) > 0
 
     def best_buddies(self, first_piece, second_piece):
         """For two adjacent pieces returns if they are best buddies
@@ -111,8 +119,8 @@ class Individual:
 
         """
 
-        fp_edges = self.edges[first_piece]
-        sp_edges = self.edges[second_piece]
+        fp_edges = self.edges(first_piece)
+        sp_edges = self.edges(second_piece)
 
         fp_best_buddy = min(fp_edges, key=lambda edge: edge[3])[1]
         sp_best_buddy = min(sp_edges, key=lambda edge: edge[3])[1]
