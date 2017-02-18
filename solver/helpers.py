@@ -25,10 +25,10 @@ def flatten_image(image, piece_size, indexed=False):
     # Crop pieces from original image
     for y in range(rows):
         for x in range(columns):
-            left, top, w, h = y * piece_size, x * piece_size, (y + 1) * piece_size, (x + 1) * piece_size
+            left, top, w, h =  x * piece_size, y * piece_size, (x + 1) * piece_size, (y + 1) * piece_size
 
-            piece = np.empty((piece_size, piece_size, 3))
-            piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
+            piece = np.empty((piece_size, piece_size, image.shape[2]))
+            piece[:piece_size, :piece_size, :] = image[top:h, left:w, :]
 
             pieces.append(piece)
 
@@ -65,5 +65,5 @@ def assemble_image(pieces, rows, columns):
 
         vertical_stack.append(np.hstack(horizontal_stack))
 
-    return np.vstack(vertical_stack).astype(np.uint8)
+    return np.vstack(vertical_stack)
 

@@ -28,7 +28,7 @@ def evaluate(individual):
         for j in range(individual.columns):
             fitness_value += dissimilarity_measure(individual[i][j], individual[i + 1][j], orientation="TD")
 
-    individual.fitness = fitness_value
+    individual.fitness = 1000 / fitness_value
 
 def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     """Calculates color difference over all neighboring pixels over all color channels.
@@ -63,13 +63,13 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
 
     # | L | - | R |
     if orientation == "LR":
-        color_difference = first_piece[0:rows, columns - 1, 0:3] - second_piece[0:rows, 0, 0:3]
+        color_difference = first_piece[:rows, columns - 1, :] - second_piece[:rows, 0, :]
 
     # | T |
     #   |
     # | D |
     if orientation == "TD":
-        color_difference = first_piece[rows - 1, 0:columns, 0:3] - second_piece[0, 0:columns, 0:3]
+        color_difference = first_piece[rows - 1, :columns, :] - second_piece[0, :columns, :]
 
     squared_color_difference = np.power(color_difference / 255.0, 2)
     color_difference_per_row = np.sum(squared_color_difference, axis=1)

@@ -7,11 +7,11 @@ from solver.cache import DissimilarityMeasureCache
 from operator import attrgetter
 import time
 
-def best_individual(population):
+def best_individual(population, n=1):
     """Returns the fittest individual from population"""
-    return min(population, key=attrgetter("fitness"))
+    return sorted(population, key=attrgetter("fitness"))[:n]
 
-def start_evolution(image, piece_size=28, population_size=1000, generations=5, verbose=True):
+def start_evolution(image, piece_size=60, population_size=100, generations=30, verbose=True):
     starting_time       = time.time()
     total_running_time  = 0
     time_per_generation = []
@@ -31,16 +31,10 @@ def start_evolution(image, piece_size=28, population_size=1000, generations=5, v
 
         start = time.time()
 
-        # Parallelize this !
         map(fitness.evaluate, population)
 
-        if verbose:
-            print "|{:^12} | {:>10.2f} s | {:>8} % | {:>10} %|".format(generation,
-                                                                       time.time() - start,
-                                                                       DissimilarityMeasureCache.hit_ratio(),
-                                                                       DissimilarityMeasureCache.miss_ratio())
-
-        DissimilarityMeasureCache.reset_stats()
+        # Elitism
+        new_population.extend(best_individual(population, n=15))
 
         while len(new_population) <= population_size:
             first_parent  = select(population)
@@ -51,9 +45,21 @@ def start_evolution(image, piece_size=28, population_size=1000, generations=5, v
 
         population = new_population
 
+        if verbose:
+            print "|{:^12} | {:>10.2f} s | {:>8.2f} % | {:>10.2f} %|".format(generation,
+                                                                       time.time() - start,
+                                                                       DissimilarityMeasureCache.hit_ratio(),
+                                                                       DissimilarityMeasureCache.miss_ratio())
+
+        DissimilarityMeasureCache.reset_stats()
+
     if verbose:
         print "+-------------+--------------+------------+-------------+"
         print "\n[INFO] Total running time {:.2f} s".format(time.time() - starting_time)
 
-    return best_individual(population)
+    map(fitness.evaluate, population)
+
+    print min(population, key=attrgetter("fitness")).fitness, max(population, key=attrgetter("fitness")).fitness
+
+    return best_individual(population)[0]
 
