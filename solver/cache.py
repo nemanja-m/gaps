@@ -1,4 +1,4 @@
-class DissimilarityMeasureCache:
+class Cache:
     """Cache for dissimilarity measures of individuals
 
     Class have static lookp table where keys are Piece's id's.
@@ -34,8 +34,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.put([1, 2], "TD", 42)
+            >>> from cache import Cache
+            >>> Cache.put([1, 2], "TD", 42)
 
         """
 
@@ -58,8 +58,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.get([1, 2], "TD")
+            >>> from cache import Cache
+            >>> Cache.get([1, 2], "TD")
             >>> 42
 
         """
@@ -80,8 +80,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.contains([1, 2], "TD")
+            >>> from cache import Cache
+            >>> Cache.contains([1, 2], "TD")
             >>> True
 
         """
@@ -98,7 +98,7 @@ class DissimilarityMeasureCache:
 
     @classmethod
     def best_match(cls, piece, orientation):
-        return cls.best_match_table[piece][orientation].top()
+        return cls.best_match_table[piece][orientation][0][0]
 
     @classmethod
     def total_lookups(cls):

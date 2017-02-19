@@ -62,57 +62,6 @@ class Individual:
         if (orientation == "L") and (edge_index % self.columns > 0):
             return self.pieces[edge_index - 1].id
 
-    def edges(self, piece):
-        """Returns edges as tuple for a given piece
-
-        Return value is a tuple (top, right, down, left) where each value in a tuple
-        is ID of a joint piece or None if there are no edges on that side.
-
-        i.e. For a top left piece return value will be something like (None, 1, 2, None)
-
-        :params piece: Piece's ID as source of the edges.
-
-        Usage::
-
-            >>> ind = Individual(...)
-            >>> ind.edges(ind.pieces[0])
-            >>> (None, 1, 2, None)
-
-        """
-
-        edge_index = self.piece_mapping[piece]
-        edges = []
-
-        # Top edge
-        if edge_index >= self.columns:
-            edge_piece = self.pieces[edge_index - self.columns].id
-            weight     = dissimilarity_measure(self.piece_by_id(edge_piece), self.piece_by_id(piece), orientation="TD")
-
-            edges.append((piece, edge_piece, "T", weight))
-
-        # Right edge
-        if edge_index % self.columns < self.columns - 1:
-            edge_piece = self.pieces[edge_index + 1].id
-            weight     = dissimilarity_measure(self.piece_by_id(piece), self.piece_by_id(edge_piece), orientation="LR")
-
-            edges.append((piece, edge_piece, "R", weight))
-
-        # Down edge
-        if edge_index < (self.rows - 1) * self.columns:
-            edge_piece = self.pieces[edge_index + self.columns].id
-            weight     = dissimilarity_measure(self.piece_by_id(piece), self.piece_by_id(edge_piece), orientation="TD")
-
-            edges.append((piece, edge_piece, "D", weight))
-
-        # Left edge
-        if edge_index % self.columns > 0:
-            edge_piece = self.pieces[edge_index - 1].id
-            weight     = dissimilarity_measure(self.piece_by_id(edge_piece), self.piece_by_id(piece), orientation="LR")
-
-            edges.append((piece, edge_piece, "L", weight))
-
-        return edges
-
     def contains_edge(self, src, dst, orientation):
         edges = [edge for edge in self.edges(src) if edge[1] == dst and edge[2] == orientation]
         return len(edges) > 0

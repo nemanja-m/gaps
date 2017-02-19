@@ -1,5 +1,5 @@
 import random
-from solver.cache import DissimilarityMeasureCache
+from solver.cache import Cache
 from solver.models import Individual
 
 class Crossover:
@@ -23,8 +23,7 @@ class Crossover:
         # Dictionary is defined outside functions for speed.
         # This way it's created once, not each time on function call
         self._complementary_orientation = {
-            "T": "D",
-            "R": "L",
+            "T": "D", "R": "L",
             "D": "T",
             "L": "R"
         }
@@ -107,8 +106,8 @@ class Crossover:
             return fp_edge
 
     def __get_buddy_edge(self, piece, orientation):
-        first_buddy  = DissimilarityMeasureCache.best_match(piece, orientation)
-        second_buddy = DissimilarityMeasureCache.best_match(first_buddy, self.__complementary_orientation(orientation))
+        first_buddy  = Cache.best_match(piece, orientation)
+        second_buddy = Cache.best_match(first_buddy, self.__complementary_orientation(orientation))
 
         if second_buddy == piece:
 
@@ -121,10 +120,10 @@ class Crossover:
                 return sp_edge
 
     def __get_best_match(self, piece, orientation):
-        best_match = DissimilarityMeasureCache.best_match(piece, orientation)
+        best_match = Cache.best_match(piece, orientation)
 
         if best_match in self.child_pieces:
-            for match, _ in DissimilarityMeasureCache.best_match_table[piece][orientation]:
+            for match, _ in Cache.best_match_table[piece][orientation]:
                 if not match in self.child_pieces:
                     return match
 

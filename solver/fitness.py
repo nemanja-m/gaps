@@ -1,5 +1,5 @@
 import numpy as np
-from solver.cache import DissimilarityMeasureCache
+from solver.cache import Cache
 
 def evaluate(individual):
     """Evaluates fitness value for given individual.
@@ -55,8 +55,8 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     ids = [first_piece.id, second_piece.id]
 
     # Return cached value if it exists
-    if DissimilarityMeasureCache.contains(ids, orientation):
-        return DissimilarityMeasureCache.get(ids, orientation)
+    if Cache.contains(ids, orientation):
+        return Cache.get(ids, orientation)
 
     rows, columns, _ = first_piece.shape()
     color_difference = None
@@ -78,7 +78,7 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     value = np.sqrt(total_difference)
 
     # Cache calculated dissimilarity measure
-    DissimilarityMeasureCache.put(ids, orientation, value)
+    Cache.put(ids, orientation, value)
 
     return value
 
