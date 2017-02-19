@@ -8,11 +8,13 @@ from operator import attrgetter
 from pqdict import minpq
 
 import time
+import numpy as np
 
-def start_evolution(image, piece_size=128, population_size=500, generations=50, verbose=True):
+def start_evolution(image, piece_size=28, population_size=300, generations=30, verbose=True):
     starting_time       = time.time()
     total_running_time  = 0
     time_per_generation = []
+    crossover_times     = []
 
     # Create population
     pieces, rows, columns = helpers.flatten_image(image, piece_size, indexed=True)
@@ -23,40 +25,46 @@ def start_evolution(image, piece_size=128, population_size=500, generations=50, 
     # Analyze image pieces' properties
     analyze_image(pieces)
 
+    print "[INFO] Starting evolution with {} individuals and {} generations ...".format(population_size, generations)
     if verbose:
-        print "[INFO] Starting evolution with {} generations ...".format(generations)
-        print "\n|{:^12} | {:^12} | {:^10} | {:^12}|".format("Generation", "Duration", "Hit Rato", "Miss Ratio")
-        print "+-------------+--------------+------------+-------------+"
+        print "\n|{:^12} | {:^12} | {:^10} | {:^9} | {:^9} |".format("Generation", "Duration", "Evaluation", "Selection", "Crossover")
+        print "+-------------+--------------+------------+-----------+-----------+"
 
     for generation in range(generations):
-        new_population = []
-
         start = time.time()
 
+        new_population = []
+
+        et = time.time()
         map(fitness.evaluate, population)
+        evaluation_time = time.time() - et
 
         # Elitism
         new_population.extend(best_individual(population, n=4))
 
-        while len(new_population) <= population_size:
-            first_parent  = select(population)
-            second_parent = select(population)
-            child         = crossover(first_parent, second_parent)
+        st = time.time()
+        selected_parents = select(population, elite=4)
+        selection_time = time.time() - st
 
+        for first_parent, second_parent in selected_parents:
+            ct = time.time()
+            child = crossover(first_parent, second_parent)
+            crossover_times.append(time.time() - ct)
             new_population.append(child)
 
         population = new_population
 
         if verbose:
-            print "|{:^12} | {:>10.2f} s | {:>8.2f} % | {:>10.2f} %|".format(generation,
+            print "|{:^12} | {:>10.3f} s | {:>8.3f} s | {:>7.3f} s | {:>7.3f} s |".format(generation,
                                                                        time.time() - start,
-                                                                       DissimilarityMeasureCache.hit_ratio(),
-                                                                       DissimilarityMeasureCache.miss_ratio())
+                                                                       evaluation_time,
+                                                                       selection_time,
+                                                                       sum(crossover_times))
 
-        DissimilarityMeasureCache.reset_stats()
+        crossover_times = []
 
     if verbose:
-        print "+-------------+--------------+------------+-------------+"
+        print "+-------------+--------------+------------+-----------+-----------+"
         print "\n[INFO] Total running time {:.2f} s".format(time.time() - starting_time)
 
     map(fitness.evaluate, population)
