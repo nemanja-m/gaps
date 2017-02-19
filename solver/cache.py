@@ -7,15 +7,19 @@ class DissimilarityMeasureCache:
     cached value instead of calculating measure again.
 
     Attributes:
-        lookup_table Map with cached dissimilarity measures for puzzle pieces
-        hits         Number of successfully lookups
-        misses       Number of unsuccessful lookups
+        lookup_table      Dictionary with cached dissimilarity measures for puzzle pieces
+        best_match_table  Dictionary with best matching piece for each edge and each piece
+
+        hits    Number of successfully lookups
+        misses  Number of unsuccessful lookups
 
     """
 
-    lookup_table = {}
-    hits         = 0
-    misses       = 0
+    lookup_table     = {}
+    best_match_table = {}
+
+    hits   = 0
+    misses = 0
 
     @classmethod
     def put(cls, ids, orientation, value):
@@ -91,6 +95,10 @@ class DissimilarityMeasureCache:
                 return True
         else:
             return False
+
+    @classmethod
+    def best_match(cls, piece, orientation):
+        return cls.best_match_table[piece][orientation].top()
 
     @classmethod
     def total_lookups(cls):
