@@ -1,8 +1,7 @@
 import random
 import bisect
-import sys
 
-from pqdict import minpq
+from solver.cache import DissimilarityMeasureCache
 from solver.models import Individual
 
 def select(population):
@@ -29,89 +28,47 @@ def select(population):
 
     return population[selected_index]
 
-def crossover(first_parent, second_parent, debug=False):
+# Quick hack !!!
+min_row  = 0
+max_row  = 0
+min_column  = 0
+max_column  = 0
+
+def crossover(first_parent, second_parent):
     child_pieces    = {}
     taken_positions = set()
-    recommended_taken = set()
-    unreached_pieces = []
 
-    # Initialize recommended positions with root piece
-    root = first_parent.pieces[int(random.uniform(0, len(first_parent.pieces)))]
-    recommended_positions = { root.id: (0, 0) }
-    recommended_taken.add((0, 0))
+    # Initialize with root piece
+    root = first_parent.pieces[int(random.uniform(0, len(first_parent.pieces)))].id
+    child_pieces[root] = (0, 0)
+    taken_positions.add((0, 0))
 
-    min_row  = 0
-    max_row  = 0
-    min_column  = 0
-    max_column  = 0
+    boundaries = available_boundaries(root, (0, 0), taken_positions, first_parent.rows, first_parent.columns)
 
-    # Initialize priority queue
-    priority_queue = minpq()
+    while len(child_pieces) < len(first_parent.pieces):
+        (shared, position), bnd = get_shared_piece(boundaries, first_parent, second_parent, child_pieces, taken_positions)
 
-    for index in range(len(first_parent.pieces)):
-        priority_queue[index] = float("inf")
-
-    priority_queue[root.id] = 0
-
-    for selected, value in priority_queue.popitems():
-        if value == float('inf'):
-            unreached_pieces.append(selected)
+        if shared != None:
+            child_pieces[shared] = position
+            taken_positions.add(position)
+            boundaries.remove(bnd)
+            boundaries.extend(available_boundaries(shared, position, taken_positions, first_parent.rows, first_parent.columns))
             continue
 
-        row, column = recommended_positions[selected]
+        (buddy, position), bnd = get_buddy_piece(boundaries, first_parent, second_parent, child_pieces, taken_positions)
 
-        child_pieces[selected] = (row, column)
-        taken_positions.add((row, column))
+        if buddy != None:
+            child_pieces[buddy] = position
+            taken_positions.add(position)
+            boundaries.remove(bnd)
+            boundaries.extend(available_boundaries(buddy, position, taken_positions, first_parent.rows, first_parent.columns))
+            continue
 
-        edges = unvisited_edges(selected, first_parent, second_parent, visited=child_pieces)
-
-        for src, dst, orientation, weight in edges:
-            relative_position = child_pieces[selected]
-
-            offset = 0
-
-            if orientation == "T":
-                offset = (-1, 0)
-            elif orientation == "R":
-                offset = (0, 1)
-            elif orientation == "D":
-                offset = (1, 0)
-            else:
-                offset = (0, -1)
-
-            row, column = tuple(map(sum, zip(relative_position, offset)))
-
-            if (row, column) in taken_positions:
-                continue
-
-            if (row, column) in recommended_taken:
-                continue
-
-            if abs(min(min_row, row)) + abs(max(max_row, row)) >= first_parent.rows:
-                continue
-
-            if abs(min(min_column, column)) + abs(max(max_column, column)) >= first_parent.columns:
-                continue
-
-            min_row = min(min_row, row)
-            max_row = max(max_row, row)
-            min_column = min(min_column, column)
-            max_column = max(max_column, column)
-
-            if shared_edge(src, dst, orientation, first_parent, second_parent):
-                priority_queue[dst] = -float("inf")
-                recommended_positions[dst] = (row, column)
-                recommended_taken.add((row, column))
-
-            elif best_buddy_edge(src, dst, first_parent, second_parent):
-                priority_queue[dst] = -sys.maxint
-                recommended_positions[dst] = (row, column)
-                recommended_taken.add((row, column))
-
-            elif dst in priority_queue and priority_queue[dst] > weight:
-                priority_queue[dst] = weight
-                recommended_positions[dst] = (row, column)
-                recommended_taken.add((row, column))
+        (best_match, position), bnd = get_best_match(boundaries, child_pieces, taken_positions)
+        child_pieces[best_match] = position
+        taken_positions.add(position)
+        boundaries.remove(bnd)
+        boundaries.extend(available_boundaries(best_match, position, taken_positions, first_parent.rows, first_parent.columns))
 
     pieces = [None] * (first_parent.rows * first_parent.columns)
 
@@ -119,25 +76,132 @@ def crossover(first_parent, second_parent, debug=False):
         index = (row - min_row) * first_parent.columns + (column - min_column)
         pieces[index] = first_parent.piece_by_id(piece)
 
-    if len(unreached_pieces) > 0:
-        for idx, element in enumerate(pieces):
-            if element == None:
-                piece_id = unreached_pieces.pop()
-                pieces[idx] = first_parent.piece_by_id(piece_id)
-
     return Individual(pieces, first_parent.rows, first_parent.columns, shuffle=False)
 
-def shared_edge(src, dst, orientation, first_parent, second_parent):
-    return (first_parent.contains_edge(src, dst, orientation) and
-            second_parent.contains_edge(src, dst, orientation))
+def get_shared_piece(boundaries, first_parent, second_parent, taken_pieces, taken_positions):
+    pieces = []
+    choosen_boundaries = []
+    for idx, (piece, orientation, position) in enumerate(boundaries):
+        shared = shared_edge((piece, orientation), first_parent, second_parent)
+        if shared != None and not shared in taken_pieces and position not in taken_positions:
+            pieces.append((shared, position))
+            choosen_boundaries.append((piece, orientation, position))
 
-def best_buddy_edge(src, dst, first_parent, second_parent):
-    return first_parent.best_buddies(src, dst) or second_parent.best_buddies(src, dst)
+    if len(pieces) > 0:
+        index = int(random.uniform(0, len(pieces)))
 
-def unvisited_edges(piece, first_parent, second_parent, visited):
-    """Returns all unvisited edges for a given piece from both parents"""
-    fp_edges = [edge for edge in first_parent.edges(piece) if not edge[1]in visited]
-    sp_edges = [edge for edge in second_parent.edges(piece) if not edge[1]in visited]
+        return pieces[index], choosen_boundaries[index]
+    else:
+        return (None, None), -1
 
-    return fp_edges + sp_edges
+def get_buddy_piece(boundaries, first_parent, second_parent, taken_pieces, taken_positions):
+    pieces = []
+    choosen_boundaries = []
+    for idx, (piece, orientation, position) in enumerate(boundaries):
+        buddy = buddy_edge((piece, orientation), first_parent, second_parent)
+        if buddy != None and not buddy in taken_pieces and position not in taken_positions:
+            pieces.append((buddy, position))
+            choosen_boundaries.append((piece, orientation, position))
+
+    if len(pieces) > 0:
+        index = int(random.uniform(0, len(pieces)))
+
+        return pieces[index], choosen_boundaries[index]
+    else:
+        return (None, None), -1
+
+def get_best_match(boundaries, taken_pieces, taken_positions):
+    for piece, orientation, position in boundaries:
+        if not position in taken_positions:
+            return (best_available_match((piece, orientation), taken_pieces), position), (piece, orientation, position)
+
+def in_range(row, column, rows, columns):
+    global min_row
+    global min_column
+    global max_row
+    global max_column
+
+    if abs(min(min_row, row)) + abs(max(max_row, row)) >= rows:
+        return False
+
+    if abs(min(min_column, column)) + abs(max(max_column, column)) >= columns:
+        return False
+
+    min_row = min(min_row, row)
+    max_row = max(max_row, row)
+    min_column = min(min_column, column)
+    max_column = max(max_column, column)
+
+    return True
+
+def available_boundaries(piece, piece_position, taken_positions, rows, columns):
+    if len(taken_positions) == rows * columns:
+        return []
+
+    row, column = piece_position
+    boundaries  = []
+
+    if not (row - 1, column) in taken_positions and in_range(row - 1, column, rows, columns):
+        boundaries.append((piece, "T", (row - 1, column)))
+
+    if not (row, column + 1) in taken_positions and in_range(row, column + 1, rows, columns):
+        boundaries.append((piece, "R", (row, column + 1)))
+
+    if not (row + 1, column) in taken_positions and in_range(row + 1, column, rows, columns):
+        boundaries.append((piece, "D", (row + 1, column)))
+
+    if not (row, column - 1) in taken_positions and in_range(row, column - 1, rows, columns):
+        boundaries.append((piece, "L", (row, column - 1)))
+
+    return boundaries
+
+def shared_edge((piece, orientation), first_parent, second_parent):
+    fp_edge = first_parent.edge(piece, orientation)
+    sp_edge = second_parent.edge(piece, orientation)
+
+    if sp_edge == fp_edge:
+        return fp_edge
+
+def buddy_edge((piece, orientation), first_parent, second_parent):
+    first_buddy  = DissimilarityMeasureCache.best_match(piece, orientation)
+    second_buddy = DissimilarityMeasureCache.best_match(first_buddy, complementary_orientation(orientation))
+
+    if second_buddy == piece:
+
+        fp_edge = first_parent.edge(piece, orientation)
+        if fp_edge == first_buddy:
+            return fp_edge
+
+        sp_edge = second_parent.edge(piece, orientation)
+        if sp_edge == first_buddy:
+            return sp_edge
+
+def best_available_match((piece, orientation), child_pieces):
+    best_match = DissimilarityMeasureCache.best_match(piece, orientation)
+
+    if best_match in child_pieces:
+        popped_items = []
+
+        # Get most compatible piece that is not already taken
+        while best_match in child_pieces:
+            best_match, value = DissimilarityMeasureCache.best_match_table[piece][orientation].popitem()
+            popped_items.append((best_match, value))
+
+        # Restore priority_queue back
+        for key, value in popped_items:
+            DissimilarityMeasureCache.best_match_table[piece][orientation].additem(key, value)
+
+    return best_match
+
+# Dictionary is defined outside functions for speed.
+# This way its created once, not each tima on function call
+_complementary_orientation = {
+        "T": "D",
+        "R": "L",
+        "D": "T",
+        "L": "R"
+}
+
+def complementary_orientation(orientation):
+    return _complementary_orientation.get(orientation, None)
 

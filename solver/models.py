@@ -47,6 +47,21 @@ class Individual:
         pieces = [piece.image for piece in self.pieces]
         return helpers.assemble_image(pieces, self.rows, self.columns)
 
+    def edge(self, piece, orientation):
+        edge_index = self.piece_mapping[piece]
+
+        if (orientation == "T") and (edge_index >= self.columns):
+            return self.pieces[edge_index - self.columns].id
+
+        if (orientation == "R") and (edge_index % self.columns < self.columns - 1):
+            return self.pieces[edge_index + 1].id
+
+        if (orientation == "D") and (edge_index < (self.rows - 1) * self.columns):
+            return self.pieces[edge_index + self.columns].id
+
+        if (orientation == "L") and (edge_index % self.columns > 0):
+            return self.pieces[edge_index - 1].id
+
     def edges(self, piece):
         """Returns edges as tuple for a given piece
 
@@ -101,31 +116,6 @@ class Individual:
     def contains_edge(self, src, dst, orientation):
         edges = [edge for edge in self.edges(src) if edge[1] == dst and edge[2] == orientation]
         return len(edges) > 0
-
-    def best_buddies(self, first_piece, second_piece):
-        """For two adjacent pieces returns if they are best buddies
-
-        Two pieces are said to be best-buddies if each piece considers the other
-        as its most compatible piece according to the compatibility measure defined
-
-        :params first_piece:  First buddy.
-        :params second_piece: Second buddy.
-
-        Usage::
-
-            >>> ind = Individual(...)
-            >>> ind.best_buddies(1, 2)
-            >>> True
-
-        """
-
-        fp_edges = self.edges(first_piece)
-        sp_edges = self.edges(second_piece)
-
-        fp_best_buddy = min(fp_edges, key=lambda edge: edge[3])[1]
-        sp_best_buddy = min(sp_edges, key=lambda edge: edge[3])[1]
-
-        return fp_best_buddy == second_piece and sp_best_buddy == first_piece
 
 class Piece:
     """Represents single jigsaw puzzle piece.
