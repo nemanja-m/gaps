@@ -7,7 +7,7 @@ from solver.operators.crossover import Crossover
 from solver.models import Individual
 from operator import attrgetter
 
-def start_evolution(image, piece_size=28, population_size=100, generations=30, verbose=True):
+def start_evolution(image, piece_size=28, population_size=200, generations=100, verbose=True):
     starting_time       = time.time()
     total_running_time  = 0
     time_per_generation = []
@@ -52,11 +52,11 @@ def start_evolution(image, piece_size=28, population_size=100, generations=30, v
         population = new_population
 
         if verbose:
-            print "|{:^12} | {:>10.3f} s | {:>8.3f} s | {:>7.3f} s | {:>7.3f} s |".format(generation,
-                                                                       time.time() - start,
-                                                                       evaluation_time,
-                                                                       selection_time,
-                                                                       sum(crossover_times))
+            print "|{:^12} | {:>10.3f} s | {:>8.3f} s | {:>7.3f} s | {:>7.3f} s |".format(generation + 1,
+                                                                                          time.time() - start,
+                                                                                          evaluation_time,
+                                                                                          selection_time,
+                                                                                          sum(crossover_times))
 
         crossover_times = []
 
