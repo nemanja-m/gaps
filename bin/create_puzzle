@@ -10,9 +10,8 @@ sys.path.append("./")
 from scipy  import misc
 from solver import helpers
 
-
 MIN_PIECE_SIZE     = 16
-MAX_PIECE_SIZE     = 64
+MAX_PIECE_SIZE     = 128
 DEFAULT_PIECE_SIZE = 28
 
 ERROR_MESSAGE   = "\033[31m[ERROR]\033[0m {0}"

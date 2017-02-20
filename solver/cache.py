@@ -1,4 +1,4 @@
-class DissimilarityMeasureCache:
+class Cache:
     """Cache for dissimilarity measures of individuals
 
     Class have static lookp table where keys are Piece's id's.
@@ -7,15 +7,19 @@ class DissimilarityMeasureCache:
     cached value instead of calculating measure again.
 
     Attributes:
-        lookup_table Map with cached dissimilarity measures for puzzle pieces
-        hits         Number of successfully lookups
-        misses       Number of unsuccessful lookups
+        lookup_table      Dictionary with cached dissimilarity measures for puzzle pieces
+        best_match_table  Dictionary with best matching piece for each edge and each piece
+
+        hits    Number of successfully lookups
+        misses  Number of unsuccessful lookups
 
     """
 
-    lookup_table = {}
-    hits         = 0
-    misses       = 0
+    lookup_table     = {}
+    best_match_table = {}
+
+    hits   = 0
+    misses = 0
 
     @classmethod
     def put(cls, ids, orientation, value):
@@ -30,8 +34,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.put([1, 2], "TD", 42)
+            >>> from cache import Cache
+            >>> Cache.put([1, 2], "TD", 42)
 
         """
 
@@ -54,8 +58,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.get([1, 2], "TD")
+            >>> from cache import Cache
+            >>> Cache.get([1, 2], "TD")
             >>> 42
 
         """
@@ -76,8 +80,8 @@ class DissimilarityMeasureCache:
 
         Usage::
 
-            >>> from cache import DissimilarityMeasureCache
-            >>> DissimilarityMeasureCache.contains([1, 2], "TD")
+            >>> from cache import Cache
+            >>> Cache.contains([1, 2], "TD")
             >>> True
 
         """
@@ -93,6 +97,10 @@ class DissimilarityMeasureCache:
             return False
 
     @classmethod
+    def best_match(cls, piece, orientation):
+        return cls.best_match_table[piece][orientation][0][0]
+
+    @classmethod
     def total_lookups(cls):
         """Total number of lookups"""
         return cls.hits + cls.misses
@@ -100,12 +108,12 @@ class DissimilarityMeasureCache:
     @classmethod
     def hit_ratio(cls):
         """Percentage of successful lookups"""
-        return (100 * cls.hits) / cls.total_lookups()
+        return (100. * cls.hits) / cls.total_lookups()
 
     @classmethod
     def miss_ratio(cls):
         """Percentage of unsuccessful lookups"""
-        return (100 * cls.misses) / cls.total_lookups()
+        return (100. * cls.misses) / cls.total_lookups()
 
     @classmethod
     def reset_stats(cls):

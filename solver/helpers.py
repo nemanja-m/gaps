@@ -1,5 +1,10 @@
 import numpy as np
+import time
+
 from solver.models import Piece
+from solver import fitness
+from cache import Cache
+from sortedcontainers import SortedListWithKey
 
 def flatten_image(image, piece_size, indexed=False):
     """Converts image into list of square pieces.
@@ -25,10 +30,10 @@ def flatten_image(image, piece_size, indexed=False):
     # Crop pieces from original image
     for y in range(rows):
         for x in range(columns):
-            left, top, w, h = y * piece_size, x * piece_size, (y + 1) * piece_size, (x + 1) * piece_size
+            left, top, w, h =  x * piece_size, y * piece_size, (x + 1) * piece_size, (y + 1) * piece_size
 
-            piece = np.empty((piece_size, piece_size, 3))
-            piece[0:piece_size, 0:piece_size, :] = image[left:w, top:h, :]
+            piece = np.empty((piece_size, piece_size, image.shape[2]))
+            piece[:piece_size, :piece_size, :] = image[top:h, left:w, :]
 
             pieces.append(piece)
 
@@ -65,5 +70,38 @@ def assemble_image(pieces, rows, columns):
 
         vertical_stack.append(np.hstack(horizontal_stack))
 
-    return np.vstack(vertical_stack).astype(np.uint8)
+    return np.vstack(vertical_stack)
+
+def analyze_image(pieces):
+    start = time.time()
+
+    best_match_table = {}
+
+    # Initialize table with best matches for each piece for each edge
+    for piece in pieces:
+        # For each edge we keep best matches as a min priority_queue
+        # Edges with lower dissimilarity_measure have higer priority
+        best_match_table[piece.id] = {
+            "T": SortedListWithKey(key=lambda k: k[1]),
+            "R": SortedListWithKey(key=lambda k: k[1]),
+            "D": SortedListWithKey(key=lambda k: k[1]),
+            "L": SortedListWithKey(key=lambda k: k[1])
+        }
+
+    def build_best_match_table(first_piece, second_piece, orientation):
+        measure = fitness.dissimilarity_measure(first_piece, second_piece, orientation)
+
+        best_match_table[second_piece.id][orientation[0]].add((first_piece.id, measure))
+        best_match_table[first_piece.id][orientation[1]].add((second_piece.id, measure))
+
+    # Calcualate dissimilarity measures and best matches for each piece
+    for first in range(len(pieces) - 1):
+        for second in range(first + 1, len(pieces)):
+            for orientation in ["LR", "TD"]:
+                build_best_match_table(pieces[first], pieces[second], orientation)
+                build_best_match_table(pieces[second], pieces[first], orientation)
+
+    Cache.best_match_table = best_match_table
+
+    print "[INFO] Analyzed in {:.3f} s Total pieces: {}".format(time.time() - start, len(best_match_table))
 
