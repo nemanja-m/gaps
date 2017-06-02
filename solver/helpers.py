@@ -70,7 +70,7 @@ def assemble_image(pieces, rows, columns):
 
         vertical_stack.append(np.hstack(horizontal_stack))
 
-    return np.vstack(vertical_stack)
+    return np.vstack(vertical_stack) / 255.0
 
 def analyze_image(pieces):
     start = time.time()
