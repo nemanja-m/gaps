@@ -3,28 +3,31 @@
 import sys
 import argparse
 import os.path
+import matplotlib.pyplot as plt
 
 sys.path.append("./")
 
 from scipy  import misc
-from solver.algorithm import start_evolution
+from solver.algorithm import Algorithm
 
 def main():
     parser = argparse.ArgumentParser(description="A Genetic based solver for jigsaw puzzles")
     parser.add_argument("--image", type=str, default="out.jpg", help="Input image.")
-    parser.add_argument("--generations", type=int, default=30, help="Number of generations.")
-    parser.add_argument("--population", type=int, default=100, help="Size of population.")
+    parser.add_argument("--generations", type=int, default=20, help="Number of generations.")
+    parser.add_argument("--population", type=int, default=200, help="Size of population.")
     parser.add_argument("--size", type=int, default=28, help="Single piece size.")
-    parser.add_argument("--verbose", type=bool, default=True, help="Verbose output.")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output.")
 
     args = parser.parse_args()
     image = misc.imread(args.image)
 
-    # Let the games begin! And may the odds be in your favor!
-    solution = start_evolution(image, args.size, args.population, args.generations, args.verbose)
+    algorithm = Algorithm(image, args.size, args.population, args.generations, args.verbose)
 
-    misc.imshow(solution.to_image())
+    # Let the games begin! And may the odds be in your favor!
+    solution = algorithm.start_evolution()
+
+    plt.imshow(solution.to_image(), interpolation="bilinear")
+    plt.show()
 
 if __name__ == "__main__":
     main()
-
