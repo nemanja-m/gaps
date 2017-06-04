@@ -17,6 +17,9 @@ class Algorithm:
         self._generations = generations
         self._verbose = verbose
 
+        # 10% of population is consider as elite individuals
+        self._elite_count = population_size / 10
+
         self._initialize_figure()
 
     def start_evolution(self):
@@ -50,10 +53,10 @@ class Algorithm:
             evaluation_time = time.time() - et
 
             # Elitism
-            new_population.extend(self._best_individual(population, n=4))
+            new_population.extend(self._best_individual(population, n=self._elite_count))
 
             st = time.time()
-            selected_parents = select(population, elite=4)
+            selected_parents = select(population, elite=self._elite_count)
             selection_time = time.time() - st
 
             for first_parent, second_parent in selected_parents:
