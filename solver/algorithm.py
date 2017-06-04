@@ -1,5 +1,6 @@
 import time
 import matplotlib.pyplot as plt
+import multiprocessing
 
 from solver import helpers
 from solver import fitness
@@ -17,8 +18,10 @@ class Algorithm:
         self._generations = generations
         self._verbose = verbose
 
-        # 10% of population is consider as elite individuals
-        self._elite_count = population_size / 10
+        # Let multiprocessing module decide number of processes
+        self._pool = multiprocessing.Pool(processes=None)
+
+        self._elite_count = 8
 
         self._initialize_figure()
 
@@ -43,20 +46,26 @@ class Algorithm:
             print "\n|{:^12} | {:^12} | {:^10} | {:^9} | {:^9} |".format("Generation", "Duration", "Evaluation", "Selection", "Crossover")
             print "+-------------+--------------+------------+-----------+-----------+"
 
+        fittest = None
+
         for generation in range(self._generations):
             start = time.time()
 
             new_population = []
 
             et = time.time()
-            map(fitness.evaluate, population)
+            fitnesses = self._pool.map(fitness.evaluate, population)
+
+            for idx, individual in enumerate(population):
+                individual.fitness = fitnesses[idx]
+
             evaluation_time = time.time() - et
 
             # Elitism
             new_population.extend(self._best_individual(population, n=self._elite_count))
 
             st = time.time()
-            selected_parents = select(population, elite=self._elite_count)
+            selected_parents = select(population, fitnesses, elite=self._elite_count)
             selection_time = time.time() - st
 
             for first_parent, second_parent in selected_parents:
@@ -84,9 +93,7 @@ class Algorithm:
             print "+-------------+--------------+------------+-----------+-----------+"
             print "\n[INFO] Total running time {:.2f} s\n".format(time.time() - starting_time)
 
-        map(fitness.evaluate, population)
-
-        return self._best_individual(population)[0]
+        return fittest
 
     def _best_individual(self, population, n=1):
         """Returns the fittest individual from population"""

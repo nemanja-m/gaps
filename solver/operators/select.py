@@ -1,7 +1,7 @@
 import random
 import bisect
 
-def select(population, elite=4):
+def select(population, fitnesses, elite=4):
     """Roulette wheel selection.
 
     Each individual is selected to reproduce, with probability directly
@@ -16,8 +16,6 @@ def select(population, elite=4):
         >>> parent = select(population)
 
     """
-
-    fitnesses             = [individual.fitness for individual in population]
     probability_intervals = [sum(fitnesses[:i + 1]) for i in range(len(fitnesses))]
 
     def random_select():
