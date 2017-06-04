@@ -26,7 +26,7 @@ def main():
     # Let the games begin! And may the odds be in your favor!
     solution = algorithm.start_evolution()
 
-    plt.imshow(solution.to_image(), interpolation="bilinear")
+    plt.imshow(solution.to_image())
     plt.show()
 
 if __name__ == "__main__":

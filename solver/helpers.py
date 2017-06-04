@@ -10,7 +10,7 @@ def flatten_image(image, piece_size, indexed=False):
     """Converts image into list of square pieces.
 
     Input image is divided into square pieces of specified size and than
-    flattened into list. Eacch list element is PIECE_SIZE x PIECE_SIZE x 3
+    flattened into list. Each list element is PIECE_SIZE x PIECE_SIZE x 3
 
     :params image:      Input image.
     :params piece_size: Size of single square piece. Each piece is PIECE_SIZE x PIECE_SIZE
@@ -37,7 +37,7 @@ def flatten_image(image, piece_size, indexed=False):
 
             pieces.append(piece)
 
-    if indexed == True:
+    if indexed:
         pieces = [Piece(value, index) for index, value in enumerate(pieces)]
 
     return pieces, rows, columns

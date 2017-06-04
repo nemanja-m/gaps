@@ -114,5 +114,5 @@ class Algorithm:
         ax.set_axis_off()
         fig.add_axes(ax)
 
-        self._current_image = ax.imshow(self._image, aspect="auto", animated=True, interpolation="bilinear")
+        self._current_image = ax.imshow(self._image, aspect="auto", animated=True)
         self._show_fittest(self._image, "Initial problem")

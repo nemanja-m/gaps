@@ -94,5 +94,5 @@ class Piece:
         return self.image.shape[0]
 
     def shape(self):
-        """Retursn shape of piece's image"""
+        """Returns shape of piece's image"""
         return self.image.shape
