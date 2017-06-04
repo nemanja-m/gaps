@@ -28,7 +28,7 @@ def evaluate(individual):
         for j in range(individual.columns):
             fitness_value += dissimilarity_measure(individual[i][j], individual[i + 1][j], orientation="TD")
 
-    individual.fitness = 1000 / fitness_value
+    return 1000 / fitness_value
 
 def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     """Calculates color difference over all neighboring pixels over all color channels.
