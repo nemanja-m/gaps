@@ -99,25 +99,3 @@ class Cache:
     @classmethod
     def best_match(cls, piece, orientation):
         return cls.best_match_table[piece][orientation][0][0]
-
-    @classmethod
-    def total_lookups(cls):
-        """Total number of lookups"""
-        return cls.hits + cls.misses
-
-    @classmethod
-    def hit_ratio(cls):
-        """Percentage of successful lookups"""
-        return (100. * cls.hits) / cls.total_lookups()
-
-    @classmethod
-    def miss_ratio(cls):
-        """Percentage of unsuccessful lookups"""
-        return (100. * cls.misses) / cls.total_lookups()
-
-    @classmethod
-    def reset_stats(cls):
-        """Reset lookups stats"""
-        cls.hits   = 0
-        cls.misses = 0
-

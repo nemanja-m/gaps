@@ -126,14 +126,9 @@ class Crossover:
                 return sp_edge
 
     def __get_best_match(self, piece, orientation):
-        best_match = Cache.best_match(piece, orientation)
-
-        if best_match in self._child_pieces:
-            for match, _ in Cache.best_match_table[piece][orientation]:
-                if not match in self._child_pieces:
-                    return match
-
-        return best_match
+        for match, _ in Cache.best_match_table[piece][orientation]:
+            if not match in self._child_pieces:
+                return match
 
     def __put_piece(self, piece, position, boundary):
         self._child_pieces[piece] = position

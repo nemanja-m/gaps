@@ -4,7 +4,6 @@ import time
 from solver.models import Piece
 from solver import fitness
 from cache import Cache
-from sortedcontainers import SortedListWithKey
 
 def flatten_image(image, piece_size, indexed=False):
     """Converts image into list of square pieces.
@@ -79,20 +78,20 @@ def analyze_image(pieces):
 
     # Initialize table with best matches for each piece for each edge
     for piece in pieces:
-        # For each edge we keep best matches as a min priority_queue
-        # Edges with lower dissimilarity_measure have higer priority
+        # For each edge we keep best matches as a sorted list.
+        # Edges with lower dissimilarity_measure have higer priority.
         best_match_table[piece.id] = {
-            "T": SortedListWithKey(key=lambda k: k[1]),
-            "R": SortedListWithKey(key=lambda k: k[1]),
-            "D": SortedListWithKey(key=lambda k: k[1]),
-            "L": SortedListWithKey(key=lambda k: k[1])
+            "T": [],
+            "R": [],
+            "D": [],
+            "L": []
         }
 
     def build_best_match_table(first_piece, second_piece, orientation):
         measure = fitness.dissimilarity_measure(first_piece, second_piece, orientation)
 
-        best_match_table[second_piece.id][orientation[0]].add((first_piece.id, measure))
-        best_match_table[first_piece.id][orientation[1]].add((second_piece.id, measure))
+        best_match_table[second_piece.id][orientation[0]].append((first_piece.id, measure))
+        best_match_table[first_piece.id][orientation[1]].append((second_piece.id, measure))
 
     # Calcualate dissimilarity measures and best matches for each piece
     for first in range(len(pieces) - 1):
@@ -101,7 +100,10 @@ def analyze_image(pieces):
                 build_best_match_table(pieces[first], pieces[second], orientation)
                 build_best_match_table(pieces[second], pieces[first], orientation)
 
+    for piece in pieces:
+        for orientation in ["T", "L", "R", "D"]:
+            best_match_table[piece.id][orientation].sort(key=lambda x: x[1])
+
     Cache.best_match_table = best_match_table
 
     print "[INFO] Analyzed in {:.3f} s Total pieces: {}".format(time.time() - start, len(best_match_table))
-
