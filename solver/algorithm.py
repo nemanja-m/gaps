@@ -5,7 +5,7 @@ import multiprocessing
 from solver import helpers
 from solver import fitness
 from solver.operators.select import select
-from solver.operators.crossover import Crossover
+from solver.crossover import Crossover
 from solver.models import Individual
 from operator import attrgetter
 
@@ -70,9 +70,9 @@ class Algorithm:
 
             for first_parent, second_parent in selected_parents:
                 ct = time.time()
-                child = Crossover(first_parent, second_parent).child()
-                crossover_times.append(time.time() - ct)
+                child = Crossover(first_parent, second_parent).start().child()
                 new_population.append(child)
+                crossover_times.append(time.time() - ct)
 
             population = new_population
 
