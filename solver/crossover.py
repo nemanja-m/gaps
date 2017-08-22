@@ -1,7 +1,11 @@
 import random
+import heapq
 
 from solver.cache import Cache
 from solver.models import Individual
+
+SHARED_PIECE_PRIORITY = -10
+BUDDY_PIECE_PRIORITY = -1
 
 class Crossover(object):
 
@@ -20,9 +24,8 @@ class Crossover(object):
         self._kernel = {}
         self._taken_positions = set()
 
-        self._shared_piece_candidates = {}
-        self._buddy_piece_candidates = {}
-        self._best_match_piece_candidates = {}
+        # Priority queue
+        self._candidate_pieces = []
 
     def child(self):
         pieces = [None] * self._pieces_length
@@ -36,22 +39,19 @@ class Crossover(object):
     def start(self):
         self._initialize_kernel()
 
-        while not self._is_kernel_full():
-            while len(self._shared_piece_candidates) > 0:
-                position, piece_id = self._shared_piece_candidates.popitem()
-                self._assert_position(position, piece_id)
-                self._put_piece_to_kernel(piece_id, position)
+        while len(self._candidate_pieces) > 0:
+            _, (position, piece_id), relative_piece = heapq.heappop(self._candidate_pieces)
 
-            if len(self._buddy_piece_candidates) > 0:
-                position, piece_id = self._buddy_piece_candidates.popitem()
-                self._assert_position(position, piece_id)
-                self._put_piece_to_kernel(piece_id, position)
+            if position in self._taken_positions:
                 continue
 
-            if len(self._best_match_piece_candidates) > 0:
-                position, piece_id = self._best_match_piece_candidates.popitem()
-                self._assert_position(position, piece_id)
-                self._put_piece_to_kernel(piece_id, position)
+            # If piece is already placed, find new piece candidate and put it back to
+            # priority queue
+            if piece_id in self._kernel:
+                self.add_piece_candidate(relative_piece[0], relative_piece[1], position)
+                continue
+
+            self._put_piece_to_kernel(piece_id, position)
 
         return self
 
@@ -68,20 +68,23 @@ class Crossover(object):
         available_boundaries = self._available_boundaries(position)
 
         for orientation, position in available_boundaries:
-            shared_piece = self._get_shared_piece(piece_id, orientation)
-            if self._is_valid_piece(shared_piece):
-                self._add_shared_piece_candidate(shared_piece, position)
-                continue
+            self.add_piece_candidate(piece_id, orientation, position)
 
-            buddy_piece = self._get_buddy_piece(piece_id, orientation)
-            if self._is_valid_piece(buddy_piece):
-                self._add_buddy_piece_candidate(buddy_piece, position)
-                continue
+    def add_piece_candidate(self, piece_id, orientation, position):
+        shared_piece = self._get_shared_piece(piece_id, orientation)
+        if self._is_valid_piece(shared_piece):
+            self._add_shared_piece_candidate(shared_piece, position, (piece_id, orientation))
+            return
 
-            best_match_piece = self._get_best_match_piece(piece_id, orientation)
-            if self._is_valid_piece(best_match_piece):
-                self._add_best_match_piece_candidate(best_match_piece, position)
-                continue
+        buddy_piece = self._get_buddy_piece(piece_id, orientation)
+        if self._is_valid_piece(buddy_piece):
+            self._add_buddy_piece_candidate(buddy_piece, position, (piece_id, orientation))
+            return
+
+        best_match_piece, priority = self._get_best_match_piece(piece_id, orientation)
+        if self._is_valid_piece(best_match_piece):
+            self._add_best_match_piece_candidate(best_match_piece, position, priority, (piece_id, orientation))
+            return
 
     def _get_shared_piece(self, piece_id, orientation):
         first_parent, second_parent = self._parents
@@ -101,18 +104,21 @@ class Crossover(object):
                     return edge
 
     def _get_best_match_piece(self, piece_id, orientation):
-        for piece, _ in Cache.best_match_table[piece_id][orientation]:
+        for piece, dissimilarity_measure in Cache.best_match_table[piece_id][orientation]:
             if self._is_valid_piece(piece):
-                return piece
+                return (piece, dissimilarity_measure)
 
-    def _add_shared_piece_candidate(self, piece_id, position):
-        self._shared_piece_candidates[position] = piece_id
+    def _add_shared_piece_candidate(self, piece_id, position, relative_piece):
+        piece_candidate = (SHARED_PIECE_PRIORITY, (position, piece_id), relative_piece)
+        heapq.heappush(self._candidate_pieces, piece_candidate)
 
-    def _add_buddy_piece_candidate(self, piece_id, position):
-        self._buddy_piece_candidates[position] = piece_id
+    def _add_buddy_piece_candidate(self, piece_id, position, relative_piece):
+        piece_candidate = (BUDDY_PIECE_PRIORITY, (position, piece_id), relative_piece)
+        heapq.heappush(self._candidate_pieces, piece_candidate)
 
-    def _add_best_match_piece_candidate(self, piece_id, position):
-        self._best_match_piece_candidates[position] = piece_id
+    def _add_best_match_piece_candidate(self, piece_id, position, priority, relative_piece):
+        piece_candidate = (priority, (position, piece_id), relative_piece)
+        heapq.heappush(self._candidate_pieces, piece_candidate)
 
     def _available_boundaries(self, (row, column)):
         boundaries = []
@@ -126,11 +132,7 @@ class Crossover(object):
             }
 
             for orientation, position in positions.iteritems():
-                if position not in self._taken_positions and \
-                   self._is_in_range(position) and \
-                   position not in self._shared_piece_candidates and \
-                   position not in self._buddy_piece_candidates and \
-                   position not in self._best_match_piece_candidates:
+                if position not in self._taken_positions and self._is_in_range(position):
                     self._update_kernel_boundaries(position)
                     boundaries.append((orientation, position))
 
@@ -157,17 +159,7 @@ class Crossover(object):
         self._max_column = max(self._max_column, column)
 
     def _is_valid_piece(self, piece_id):
-        return piece_id is not None and \
-               piece_id not in self._kernel and \
-               piece_id not in self._shared_piece_candidates.values() and \
-               piece_id not in self._buddy_piece_candidates.values() and \
-               piece_id not in self._best_match_piece_candidates.values()
-
-    def _assert_position(self, position, piece_id):
-        if position in self._taken_positions:
-            raise Exception("Position already in kernel.")
-        if piece_id in self._kernel:
-            raise Exception("Piece already in kernel.")
+        return piece_id is not None and piece_id not in self._kernel
 
 def complementary_orientation(orientation):
     return {
@@ -176,4 +168,3 @@ def complementary_orientation(orientation):
         "D": "T",
         "L": "R"
     }.get(orientation, None)
-
