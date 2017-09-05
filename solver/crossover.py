@@ -2,7 +2,7 @@ import random
 import heapq
 
 from solver.cache import Cache
-from solver.models import Individual
+from solver.individual import Individual
 
 SHARED_PIECE_PRIORITY = -10
 BUDDY_PIECE_PRIORITY = -1

@@ -3,11 +3,11 @@ import time
 import multiprocessing
 import matplotlib.pyplot as plt
 
-from solver import helpers
+from solver import image_helpers
 from solver import fitness
 from solver.selection import roulette_selection
 from solver.crossover import Crossover
-from solver.models import Individual
+from solver.individual import Individual
 
 class GeneticAlgorithm(object):
     ELITISM_FACTOR = 0.02
@@ -30,13 +30,13 @@ class GeneticAlgorithm(object):
         elite_size = int(population_size * self.ELITISM_FACTOR)
 
         # Create population
-        pieces, rows, columns = helpers.flatten_image(self._image, self._piece_size, indexed=True)
+        pieces, rows, columns = image_helpers.flatten_image(self._image, self._piece_size, indexed=True)
         population = [Individual(pieces, rows, columns) for i in range(population_size)]
 
         print "\n[INFO] Created population in {:.3f} s".format(time.time() - starting_time)
 
         # Analyze image pieces' properties
-        helpers.analyze_image(pieces)
+        image_helpers.analyze_image(pieces)
 
         print "[INFO] Starting evolution with {} individuals and {} generations ...".format(population_size, generations)
 

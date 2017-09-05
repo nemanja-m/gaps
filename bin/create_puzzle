@@ -16,7 +16,7 @@ import sys
 import numpy as np
 
 from scipy import misc
-from solver import helpers
+from solver import image_helpers
 
 MIN_PIECE_SIZE = 16
 MAX_PIECE_SIZE = 128
@@ -30,13 +30,13 @@ COLOR_STRING = {
 def create_puzzle(image_path, output_path, piece_size):
     """Creates jigsaw puzzle from input image"""
     image = misc.imread(image_path)
-    pieces, rows, columns = helpers.flatten_image(image, piece_size)
+    pieces, rows, columns = image_helpers.flatten_image(image, piece_size)
 
     # Randomize pieces in order to make puzzle
     np.random.shuffle(pieces)
 
     # Create puzzle by stacking pieces
-    puzzle = helpers.assemble_image(pieces, rows, columns)
+    puzzle = image_helpers.assemble_image(pieces, rows, columns)
 
     misc.imsave(output_path, puzzle)
     print_messages(["Puzzle created with {} pieces".format(len(pieces))])

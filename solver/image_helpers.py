@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-from solver.models import Piece
+from solver.piece import Piece
 from solver import fitness
 from cache import Cache
 
