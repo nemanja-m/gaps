@@ -1,10 +1,8 @@
 from operator import attrgetter
 import time
-import multiprocessing
 import matplotlib.pyplot as plt
 
 from solver import image_helpers
-from solver import fitness
 from solver.selection import roulette_selection
 from solver.crossover import Crossover
 from solver.individual import Individual
@@ -16,9 +14,6 @@ class GeneticAlgorithm(object):
     def __init__(self, image, piece_size):
         self._image = image
         self._piece_size = piece_size
-
-        # Let multiprocessing module decide number of processes
-        self._pool = multiprocessing.Pool(processes=None)
 
         self._initialize_figure()
 
@@ -51,10 +46,6 @@ class GeneticAlgorithm(object):
             new_population = []
 
             et = time.time()
-            fitnesses = self._pool.map(fitness.evaluate, population)
-
-            for idx, individual in enumerate(population):
-                individual.fitness = fitnesses[idx]
 
             evaluation_time = time.time() - et
 
@@ -62,7 +53,7 @@ class GeneticAlgorithm(object):
             new_population.extend(self._best_individual(population, n=elite_size))
 
             st = time.time()
-            selected_parents = roulette_selection(population, fitnesses, elite=elite_size)
+            selected_parents = roulette_selection(population, elite=elite_size)
             selection_time = time.time() - st
 
             for first_parent, second_parent in selected_parents:
