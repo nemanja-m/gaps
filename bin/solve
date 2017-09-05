@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""Solves given jigsaw puzzle
+
+This module loads puzzle and initializes genetic algorithm with
+given number of generations and population. At the end, solution image is displayed.
+
+"""
+
 import sys
 import argparse
 import os.path
@@ -10,24 +17,31 @@ sys.path.append("./")
 from scipy  import misc
 from solver.algorithm import Algorithm
 
-def main():
+GENERATIONS = 20
+POPULATION = 200
+PIECE_SIZE = 28
+
+def solve_puzzle(image, size, population, generations, verbose):
+    """Initializes genetic algorithm and shows solution"""
+    algorithm = Algorithm(image, size, population, generations, verbose)
+    return algorithm.start_evolution()
+
+def parse_arguments():
+    """Parses input arguments required to solve puzzle"""
     parser = argparse.ArgumentParser(description="A Genetic based solver for jigsaw puzzles")
     parser.add_argument("--image", type=str, default="out.jpg", help="Input image.")
-    parser.add_argument("--generations", type=int, default=20, help="Number of generations.")
-    parser.add_argument("--population", type=int, default=200, help="Size of population.")
-    parser.add_argument("--size", type=int, default=28, help="Single piece size.")
+    parser.add_argument("--generations", type=int, default=GENERATIONS, help="Num of generations.")
+    parser.add_argument("--population", type=int, default=POPULATION, help="Size of population.")
+    parser.add_argument("--size", type=int, default=PIECE_SIZE, help="Single piece size.")
     parser.add_argument("--verbose", action="store_true", help="Verbose output.")
-
-    args = parser.parse_args()
-    image = misc.imread(args.image)
-
-    algorithm = Algorithm(image, args.size, args.population, args.generations, args.verbose)
-
-    # Let the games begin! And may the odds be in your favor!
-    solution = algorithm.start_evolution()
-
-    plt.imshow(solution.to_image())
-    plt.show()
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    main()
+    ARGS = parse_arguments()
+    IMAGE = misc.imread(ARGS.image)
+
+    # Let the games begin! And may the odds be in your favor!
+    SOLUTION = solve_puzzle(IMAGE, ARGS.size, ARGS.population, ARGS.generations, ARGS.verbose)
+
+    plt.imshow(SOLUTION.to_image())
+    plt.show()
