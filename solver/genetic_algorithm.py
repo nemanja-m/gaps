@@ -5,13 +5,12 @@ import matplotlib.pyplot as plt
 
 from solver import helpers
 from solver import fitness
-from solver.operators.select import select
+from solver.selection import roulette_selection
 from solver.crossover import Crossover
 from solver.models import Individual
 
-ELITISM_FACTOR = 0.02
-
 class GeneticAlgorithm(object):
+    ELITISM_FACTOR = 0.02
 
     def __init__(self, image, piece_size):
         self._image = image
@@ -28,7 +27,7 @@ class GeneticAlgorithm(object):
         time_per_generation = []
         crossover_times = []
 
-        elite_size = int(population_size * ELITISM_FACTOR)
+        elite_size = int(population_size * self.ELITISM_FACTOR)
 
         # Create population
         pieces, rows, columns = helpers.flatten_image(self._image, self._piece_size, indexed=True)
@@ -64,7 +63,7 @@ class GeneticAlgorithm(object):
             new_population.extend(self._best_individual(population, n=elite_size))
 
             st = time.time()
-            selected_parents = select(population, fitnesses, elite=elite_size)
+            selected_parents = roulette_selection(population, fitnesses, elite=elite_size)
             selection_time = time.time() - st
 
             for first_parent, second_parent in selected_parents:
