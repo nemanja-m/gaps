@@ -1,5 +1,4 @@
 import numpy as np
-from solver.cache import Cache
 
 
 def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
@@ -25,11 +24,6 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
         >>> dissimilarity_measure(p1, p2, orientation="TD")
 
     """
-    ids = [first_piece.id, second_piece.id]
-
-    if Cache.contains(ids, orientation):
-        return Cache.get(ids, orientation)
-
     rows, columns, _ = first_piece.shape()
     color_difference = None
 
@@ -48,6 +42,5 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
     total_difference = np.sum(color_difference_per_row, axis=0)
 
     value = np.sqrt(total_difference)
-    Cache.put(ids, orientation, value)
 
     return value

@@ -6,6 +6,7 @@ from solver import image_helpers
 from solver.selection import roulette_selection
 from solver.crossover import Crossover
 from solver.individual import Individual
+from solver.image_analysis import ImageAnalysis
 
 
 class GeneticAlgorithm(object):
@@ -29,8 +30,7 @@ class GeneticAlgorithm(object):
 
         print "\n[INFO] Created population in {:.3f} s".format(time.time() - starting_time)
 
-        # Analyze image pieces' properties
-        image_helpers.analyze_image(pieces)
+        ImageAnalysis.analyze_image(pieces)
 
         print "[INFO] Starting evolution with {} individuals and {} generations ...".format(population_size, generations)
 

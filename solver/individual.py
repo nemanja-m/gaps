@@ -1,6 +1,6 @@
 import numpy as np
 from solver import image_helpers
-from solver.fitness import dissimilarity_measure
+from solver.image_analysis import ImageAnalysis
 
 
 class Individual(object):
@@ -52,11 +52,13 @@ class Individual(object):
             # For each two adjacent pieces in rows
             for i in range(self.rows):
                 for j in range(self.columns - 1):
-                    fitness_value += dissimilarity_measure(self[i][j], self[i][j + 1], orientation="LR")
+                    ids = (self[i][j].id, self[i][j + 1].id)
+                    fitness_value += ImageAnalysis.get_dissimilarity(ids, orientation="LR")
             # For each two adjacent pieces in columns
             for i in range(self.rows - 1):
                 for j in range(self.columns):
-                    fitness_value += dissimilarity_measure(self[i][j], self[i + 1][j], orientation="TD")
+                    ids = (self[i][j].id, self[i + 1][j].id)
+                    fitness_value += ImageAnalysis.get_dissimilarity(ids, orientation="TD")
 
             self._fitness = self.FITNESS_FACTOR / fitness_value
 

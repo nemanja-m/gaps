@@ -1,7 +1,7 @@
 import random
 import heapq
 
-from solver.cache import Cache
+from solver.image_analysis import ImageAnalysis
 from solver.individual import Individual
 
 SHARED_PIECE_PRIORITY = -10
@@ -96,8 +96,8 @@ class Crossover(object):
             return first_parent_edge
 
     def _get_buddy_piece(self, piece_id, orientation):
-        first_buddy = Cache.best_match(piece_id, orientation)
-        second_buddy = Cache.best_match(first_buddy, complementary_orientation(orientation))
+        first_buddy = ImageAnalysis.best_match(piece_id, orientation)
+        second_buddy = ImageAnalysis.best_match(first_buddy, complementary_orientation(orientation))
 
         if second_buddy == piece_id:
             for edge in [parent.edge(piece_id, orientation) for parent in self._parents]:
@@ -105,9 +105,9 @@ class Crossover(object):
                     return edge
 
     def _get_best_match_piece(self, piece_id, orientation):
-        for piece, dissimilarity_measure in Cache.best_match_table[piece_id][orientation]:
+        for piece, dissimilarity_measure in ImageAnalysis.best_match_table[piece_id][orientation]:
             if self._is_valid_piece(piece):
-                return (piece, dissimilarity_measure)
+                return piece, dissimilarity_measure
 
     def _add_shared_piece_candidate(self, piece_id, position, relative_piece):
         piece_candidate = (SHARED_PIECE_PRIORITY, (position, piece_id), relative_piece)
@@ -161,6 +161,7 @@ class Crossover(object):
 
     def _is_valid_piece(self, piece_id):
         return piece_id is not None and piece_id not in self._kernel
+
 
 def complementary_orientation(orientation):
     return {
