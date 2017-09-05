@@ -15,8 +15,6 @@ import os.path
 import sys
 import numpy as np
 
-sys.path.append("./")
-
 from scipy import misc
 from solver import helpers
 
