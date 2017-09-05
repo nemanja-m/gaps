@@ -1,16 +1,15 @@
-
 class Piece(object):
     """Represents single jigsaw puzzle piece.
 
     Each piece has identifier so it can be
-    tracked accross different individuals
+    tracked across different individuals
 
-    :param value: ndarray representing piece's RGB values
+    :param image: ndarray representing piece's RGB values
     :param index: Unique id withing piece's parent image
 
     Usage::
 
-        >>> from models import Piece
+        >>> from solver.piece import Piece
         >>> piece = Piece(image[:28, :28, :], 42)
 
     """

@@ -1,6 +1,7 @@
 import numpy as np
 from solver.cache import Cache
 
+
 def evaluate(individual):
     """Evaluates fitness value for given individual.
 

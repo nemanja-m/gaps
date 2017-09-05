@@ -7,6 +7,7 @@ from solver.individual import Individual
 SHARED_PIECE_PRIORITY = -10
 BUDDY_PIECE_PRIORITY = -1
 
+
 class Crossover(object):
 
     def __init__(self, first_parent, second_parent):

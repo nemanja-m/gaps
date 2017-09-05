@@ -9,6 +9,7 @@ from solver.selection import roulette_selection
 from solver.crossover import Crossover
 from solver.individual import Individual
 
+
 class GeneticAlgorithm(object):
     ELITISM_FACTOR = 0.02
 
@@ -23,8 +24,6 @@ class GeneticAlgorithm(object):
 
     def start_evolution(self, population_size, generations, verbose):
         starting_time = time.time()
-        total_running_time = 0
-        time_per_generation = []
         crossover_times = []
 
         elite_size = int(population_size * self.ELITISM_FACTOR)
