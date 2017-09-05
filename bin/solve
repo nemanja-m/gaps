@@ -13,7 +13,7 @@ import os.path
 import matplotlib.pyplot as plt
 
 from scipy import misc
-from solver.algorithm import Algorithm
+from solver.genetic_algorithm import GeneticAlgorithm
 
 GENERATIONS = 20
 POPULATION = 200
@@ -21,8 +21,8 @@ PIECE_SIZE = 28
 
 def solve_puzzle(image, size, population, generations, verbose):
     """Initializes genetic algorithm and shows solution"""
-    algorithm = Algorithm(image, size, population, generations, verbose)
-    return algorithm.start_evolution()
+    algorithm = GeneticAlgorithm(image, size)
+    return algorithm.start_evolution(population, generations, verbose)
 
 def parse_arguments():
     """Parses input arguments required to solve puzzle"""

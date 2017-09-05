@@ -1,54 +1,53 @@
+from operator import attrgetter
 import time
-import matplotlib.pyplot as plt
 import multiprocessing
+import matplotlib.pyplot as plt
 
 from solver import helpers
 from solver import fitness
 from solver.operators.select import select
 from solver.crossover import Crossover
 from solver.models import Individual
-from operator import attrgetter
 
-class Algorithm:
+ELITISM_FACTOR = 0.02
 
-    def __init__(self, image, piece_size, population_size, generations, verbose):
+class GeneticAlgorithm(object):
+
+    def __init__(self, image, piece_size):
         self._image = image
         self._piece_size = piece_size
-        self._population_size = population_size
-        self._generations = generations
-        self._verbose = verbose
 
         # Let multiprocessing module decide number of processes
         self._pool = multiprocessing.Pool(processes=None)
 
-        self._elite_count = 8
-
         self._initialize_figure()
 
-    def start_evolution(self):
-        starting_time       = time.time()
-        total_running_time  = 0
+    def start_evolution(self, population_size, generations, verbose):
+        starting_time = time.time()
+        total_running_time = 0
         time_per_generation = []
-        crossover_times     = []
+        crossover_times = []
+
+        elite_size = int(population_size * ELITISM_FACTOR)
 
         # Create population
         pieces, rows, columns = helpers.flatten_image(self._image, self._piece_size, indexed=True)
-        population = [Individual(pieces, rows, columns) for i in range(self._population_size)]
+        population = [Individual(pieces, rows, columns) for i in range(population_size)]
 
         print "\n[INFO] Created population in {:.3f} s".format(time.time() - starting_time)
 
         # Analyze image pieces' properties
         helpers.analyze_image(pieces)
 
-        print "[INFO] Starting evolution with {} individuals and {} generations ...".format(self._population_size, self._generations)
+        print "[INFO] Starting evolution with {} individuals and {} generations ...".format(population_size, generations)
 
-        if self._verbose:
+        if verbose:
             print "\n|{:^12} | {:^12} | {:^10} | {:^9} | {:^9} |".format("Generation", "Duration", "Evaluation", "Selection", "Crossover")
             print "+-------------+--------------+------------+-----------+-----------+"
 
         fittest = None
 
-        for generation in range(self._generations):
+        for generation in range(generations):
             start = time.time()
 
             new_population = []
@@ -62,10 +61,10 @@ class Algorithm:
             evaluation_time = time.time() - et
 
             # Elitism
-            new_population.extend(self._best_individual(population, n=self._elite_count))
+            new_population.extend(self._best_individual(population, n=elite_size))
 
             st = time.time()
-            selected_parents = select(population, fitnesses, elite=self._elite_count)
+            selected_parents = select(population, fitnesses, elite=elite_size)
             selection_time = time.time() - st
 
             for first_parent, second_parent in selected_parents:
@@ -78,9 +77,9 @@ class Algorithm:
 
             fittest = self._best_individual(population)[0]
 
-            self._show_fittest(fittest.to_image(), title="Generation: {} / {}".format(generation + 1, self._generations))
+            self._show_fittest(fittest.to_image(), title="Generation: {} / {}".format(generation + 1, generations))
 
-            if self._verbose:
+            if verbose:
                 print "|{:^12} | {:>10.3f} s | {:>8.3f} s | {:>7.3f} s | {:>7.3f} s |".format(generation + 1,
                                                                                               time.time() - start,
                                                                                               evaluation_time,
@@ -89,7 +88,7 @@ class Algorithm:
 
             crossover_times = []
 
-        if self._verbose:
+        if verbose:
             print "+-------------+--------------+------------+-----------+-----------+"
             print "\n[INFO] Total running time {:.2f} s\n".format(time.time() - starting_time)
 
