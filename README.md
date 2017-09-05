@@ -9,7 +9,6 @@ Requirements:
 - `python 2.6+`
 - `numpy`
 - `scipy`
-- `sortedcontainers`
 
 Install with:
 
