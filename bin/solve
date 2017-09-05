@@ -7,9 +7,7 @@ given number of generations and population. At the end, solution image is displa
 
 """
 
-import sys
 import argparse
-import os.path
 import matplotlib.pyplot as plt
 
 from scipy import misc
@@ -19,10 +17,12 @@ GENERATIONS = 20
 POPULATION = 200
 PIECE_SIZE = 28
 
+
 def solve_puzzle(image, size, population, generations, verbose):
     """Initializes genetic algorithm and shows solution"""
-    algorithm = GeneticAlgorithm(image, size)
-    return algorithm.start_evolution(population, generations, verbose)
+    algorithm = GeneticAlgorithm(image, size, population, generations)
+    return algorithm.start_evolution(verbose)
+
 
 def parse_arguments():
     """Parses input arguments required to solve puzzle"""

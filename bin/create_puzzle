@@ -12,7 +12,6 @@ depending on given piece size.
 
 import argparse
 import os.path
-import sys
 import numpy as np
 
 from scipy import misc
@@ -26,6 +25,7 @@ COLOR_STRING = {
     "ERROR": "\033[31m[ERROR]\033[0m {0}",
     "SUCCESS": "\033[32m[SUCCESS]\033[0m {0}"
 }
+
 
 def create_puzzle(image_path, output_path, piece_size):
     """Creates jigsaw puzzle from input image"""
@@ -41,11 +41,13 @@ def create_puzzle(image_path, output_path, piece_size):
     misc.imsave(output_path, puzzle)
     print_messages(["Puzzle created with {} pieces".format(len(pieces))])
 
+
 def print_messages(messages, level="SUCCESS"):
     """Prints given messages as colored strings"""
     print
     for message in messages:
         print COLOR_STRING[level].format(message)
+
 
 def validate_arguments(args):
     """Validates input arguments required to create puzzle"""
@@ -63,6 +65,7 @@ def validate_arguments(args):
     if len(errors) > 0:
         print_messages(errors, level="ERROR")
         exit()
+
 
 def parse_arguments():
     """Parses input arguments required to create puzzle"""

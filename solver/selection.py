@@ -4,7 +4,7 @@ import random
 import bisect
 
 
-def roulette_selection(population, elite=4):
+def roulette_selection(population, elites=4):
     """Roulette wheel selection.
 
     Each individual is selected to reproduce, with probability directly
@@ -29,7 +29,7 @@ def roulette_selection(population, elite=4):
         return population[selected_index]
 
     selected = []
-    for i in xrange(len(population) - elite):
+    for i in xrange(len(population) - elites):
         first, second = select_individual(), select_individual()
         selected.append((first, second))
 

@@ -37,7 +37,7 @@ class Crossover(object):
 
         return Individual(pieces, self._child_rows, self._child_columns, shuffle=False)
 
-    def start(self):
+    def run(self):
         self._initialize_kernel()
 
         while len(self._candidate_pieces) > 0:
@@ -53,8 +53,6 @@ class Crossover(object):
                 continue
 
             self._put_piece_to_kernel(piece_id, position)
-
-        return self
 
     def _initialize_kernel(self):
         root_piece = self._parents[0].pieces[int(random.uniform(0, self._pieces_length))]
