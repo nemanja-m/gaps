@@ -9,10 +9,10 @@ given number of generations and population. At the end, solution image is displa
 
 import argparse
 import matplotlib.pyplot as plt
-
 from time import time
 from scipy import misc
 from solver.genetic_algorithm import GeneticAlgorithm
+from solver.plot import Plot
 
 GENERATIONS = 20
 POPULATION = 200
@@ -21,12 +21,7 @@ PIECE_SIZE = 28
 
 def show_image(img, title):
     if not args.verbose:
-        fig = plt.figure(frameon=False)
-        ax = plt.Axes(fig, [0., 0., 1., .9])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        ax.imshow(img, aspect="auto", animated=True)
-        plt.suptitle(title, fontsize=20)
+        Plot(img, title)
     plt.show()
 
 
