@@ -1,4 +1,5 @@
 from solver.fitness import dissimilarity_measure
+from solver.progress_bar import print_progress
 
 
 class ImageAnalysis(object):
@@ -36,7 +37,9 @@ class ImageAnalysis(object):
             cls.best_match_table[first_piece.id][orientation[1]].append((second_piece.id, measure))
 
         # Calculate dissimilarity measures and best matches for each piece.
-        for first in range(len(pieces) - 1):
+        iterations = len(pieces) - 1
+        for first in range(iterations):
+            print_progress(first, iterations - 1, prefix="Analyzing image:")
             for second in range(first + 1, len(pieces)):
                 for orientation in ["LR", "TD"]:
                     update_best_match_table(pieces[first], pieces[second])

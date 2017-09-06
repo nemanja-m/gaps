@@ -1,12 +1,11 @@
-import time
 from operator import attrgetter
-
 from solver import image_helpers
 from solver.selection import roulette_selection
 from solver.crossover import Crossover
 from solver.individual import Individual
 from solver.image_analysis import ImageAnalysis
 from solver.plot import Plot
+from solver.progress_bar import print_progress
 
 
 class GeneticAlgorithm(object):
@@ -17,17 +16,20 @@ class GeneticAlgorithm(object):
         self._piece_size = piece_size
         self._generations = generations
         self._elite_size = int(population_size * self.ELITISM_FACTOR)
-
         pieces, rows, columns = image_helpers.flatten_image(image, piece_size, indexed=True)
         self._population = [Individual(pieces, rows, columns) for _ in range(population_size)]
-
-        ImageAnalysis.analyze_image(pieces)
+        self._pieces = pieces
 
     def start_evolution(self, verbose):
-        plot = Plot(self._image)
+        if verbose:
+            plot = Plot(self._image)
+
+        ImageAnalysis.analyze_image(self._pieces)
         fittest = None
 
         for generation in range(self._generations):
+            print_progress(generation, self._generations - 1, prefix="Solving puzzle:")
+
             new_population = []
 
             # Elitism
@@ -42,9 +44,11 @@ class GeneticAlgorithm(object):
                 child = crossover.child()
                 new_population.append(child)
 
-            self._population = new_population
             fittest = self._best_individual()
-            plot.show_fittest(fittest.to_image(), title="Generation: {} / {}".format(generation + 1, self._generations))
+            self._population = new_population
+
+            if verbose:
+                plot.show_fittest(fittest.to_image(), "Generation: {} / {}".format(generation + 1, self._generations))
 
         return fittest
 

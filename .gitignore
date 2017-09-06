@@ -5,6 +5,7 @@ __pycache__/
 
 # Generated puzzle
 out.jpg
+*_solution.jpg
 
 # C extensions
 *.so

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 class Plot(object):
 
-    def __init__(self, image):
+    def __init__(self, image, title="Initial problem"):
         # Let image fill the figure
         fig = plt.figure(frameon=False)
         ax = plt.Axes(fig, [0., 0., 1., .9])
@@ -11,7 +11,7 @@ class Plot(object):
         fig.add_axes(ax)
 
         self._current_image = ax.imshow(image, aspect="auto", animated=True)
-        self.show_fittest(image, "Initial problem")
+        self.show_fittest(image, title)
 
     def show_fittest(self, image, title):
         plt.suptitle(title, fontsize=20)
