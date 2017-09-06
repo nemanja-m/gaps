@@ -18,8 +18,8 @@ def dissimilarity_measure(first_piece, second_piece, orientation="LR"):
 
     Usage::
 
-        >>> from solver.fitness import dissimilarity_measure
-        >>> from solver.piece import Piece
+        >>> from gaps.fitness import dissimilarity_measure
+        >>> from gaps.piece import Piece
         >>> p1, p2 = Piece(), Piece()
         >>> dissimilarity_measure(p1, p2, orientation="TD")
 

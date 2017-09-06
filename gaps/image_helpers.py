@@ -1,5 +1,5 @@
 import numpy as np
-from solver.piece import Piece
+from gaps.piece import Piece
 
 
 def flatten_image(image, piece_size, indexed=False):
@@ -14,7 +14,7 @@ def flatten_image(image, piece_size, indexed=False):
 
     Usage::
 
-        >>> from solver.image_helpers import flatten_image
+        >>> from gaps.image_helpers import flatten_image
         >>> flat_image = flatten_image(image, 32)
 
     """
@@ -47,8 +47,8 @@ def assemble_image(pieces, rows, columns):
 
     Usage::
 
-        >>> from solver.image_helpers import assemble_image
-        >>> from solver.image_helpers import flatten_image
+        >>> from gaps.image_helpers import assemble_image
+        >>> from gaps.image_helpers import flatten_image
         >>> pieces, rows, cols = flatten_image(...)
         >>> original_img = assemble_image(pieces, rows, cols)
 

@@ -15,7 +15,7 @@ def roulette_selection(population, elites=4):
 
     Usage::
 
-        >>> from solver.selection import roulette_selection
+        >>> from gaps.selection import roulette_selection
         >>> selected_parents = roulette_selection(population, 10)
 
     """

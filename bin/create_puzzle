@@ -15,7 +15,7 @@ import os.path
 import numpy as np
 
 from scipy import misc
-from solver import image_helpers
+from gaps import image_helpers
 
 MIN_PIECE_SIZE = 16
 MAX_PIECE_SIZE = 128

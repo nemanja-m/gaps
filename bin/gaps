@@ -11,8 +11,8 @@ import argparse
 import matplotlib.pyplot as plt
 from time import time
 from scipy import misc
-from solver.genetic_algorithm import GeneticAlgorithm
-from solver.plot import Plot
+from gaps.genetic_algorithm import GeneticAlgorithm
+from gaps.plot import Plot
 
 GENERATIONS = 20
 POPULATION = 200

@@ -9,7 +9,7 @@ class Piece(object):
 
     Usage::
 
-        >>> from solver.piece import Piece
+        >>> from gaps.piece import Piece
         >>> piece = Piece(image[:28, :28, :], 42)
 
     """

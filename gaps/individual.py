@@ -1,6 +1,6 @@
 import numpy as np
-from solver import image_helpers
-from solver.image_analysis import ImageAnalysis
+from gaps import image_helpers
+from gaps.image_analysis import ImageAnalysis
 
 
 class Individual(object):
@@ -16,8 +16,8 @@ class Individual(object):
 
     Usage::
 
-        >>> from solver.individual import Individual
-        >>> from solver.image_helpers import flatten_image
+        >>> from gaps.individual import Individual
+        >>> from gaps.image_helpers import flatten_image
         >>> pieces, rows, columns = flatten_image(...)
         >>> ind = Individual(pieces, rows, columns)
 

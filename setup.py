@@ -2,13 +2,14 @@ from setuptools import setup
 
 setup(
     name="gaps",
+    version="1.0",
     author="Nemanja Milicevic",
     author_email="the.nemanja.milicevic@gmail.com",
     description="Genetic-Algorithm based jigsaw puzzle solver",
     license="MIT",
-    url="https://github.com/nemanja-m/genetic-jigsaw-solver",
+    url="https://github.com/nemanja-m/gaps",
     packages=[
-        "solver",
+        "gaps",
         "tests"
     ],
     install_requires=[
@@ -18,6 +19,6 @@ setup(
     ],
     scripts=[
         "bin/create_puzzle",
-        "bin/solve"
+        "bin/gaps"
     ]
 )

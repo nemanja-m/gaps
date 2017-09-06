@@ -1,5 +1,5 @@
-from solver.fitness import dissimilarity_measure
-from solver.progress_bar import print_progress
+from gaps.fitness import dissimilarity_measure
+from gaps.progress_bar import print_progress
 
 
 class ImageAnalysis(object):
@@ -61,7 +61,7 @@ class ImageAnalysis(object):
 
         Usage::
 
-            >>> from solver.image_analysis import ImageAnalysis
+            >>> from gaps.image_analysis import ImageAnalysis
             >>> ImageAnalysis.put_dissimilarity([1, 2], "TD", 42)
         """
         if ids not in cls.dissimilarity_measures:
@@ -79,7 +79,7 @@ class ImageAnalysis(object):
 
         Usage::
 
-            >>> from solver.image_analysis import ImageAnalysis
+            >>> from gaps.image_analysis import ImageAnalysis
             >>> ImageAnalysis.get_dissimilarity([1, 2], "TD")
 
         """

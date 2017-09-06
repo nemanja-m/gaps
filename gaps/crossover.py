@@ -1,8 +1,8 @@
 import random
 import heapq
 
-from solver.image_analysis import ImageAnalysis
-from solver.individual import Individual
+from gaps.image_analysis import ImageAnalysis
+from gaps.individual import Individual
 
 SHARED_PIECE_PRIORITY = -10
 BUDDY_PIECE_PRIORITY = -1

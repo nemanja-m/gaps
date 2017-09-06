@@ -1,11 +1,11 @@
 from operator import attrgetter
-from solver import image_helpers
-from solver.selection import roulette_selection
-from solver.crossover import Crossover
-from solver.individual import Individual
-from solver.image_analysis import ImageAnalysis
-from solver.plot import Plot
-from solver.progress_bar import print_progress
+from gaps import image_helpers
+from gaps.selection import roulette_selection
+from gaps.crossover import Crossover
+from gaps.individual import Individual
+from gaps.image_analysis import ImageAnalysis
+from gaps.plot import Plot
+from gaps.progress_bar import print_progress
 
 
 class GeneticAlgorithm(object):

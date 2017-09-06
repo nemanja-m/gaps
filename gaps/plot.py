@@ -22,5 +22,5 @@ class Plot(object):
         self._current_image.set_data(image)
         plt.draw()
 
-        # Give pyplot 0.05 to draw image
+        # Give pyplot 0.05s to draw image
         plt.pause(0.05)
