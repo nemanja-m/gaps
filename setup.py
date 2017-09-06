@@ -7,6 +7,17 @@ setup(
     description="Genetic-Algorithm based jigsaw puzzle solver",
     license="MIT",
     url="https://github.com/nemanja-m/genetic-jigsaw-solver",
-    packages=["solver", "tests"],
-    scripts=["bin/create_puzzle", "bin/solve"]
+    packages=[
+        "solver",
+        "tests"
+    ],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib"
+    ],
+    scripts=[
+        "bin/create_puzzle",
+        "bin/solve"
+    ]
 )
