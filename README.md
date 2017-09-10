@@ -1,43 +1,28 @@
-# About
+# gaps
 
-A Genetic Algorithm-Based Solver for Jigsaw Puzzles :cyclone:
+Automatic Genetic Algorithm-Based Solver for Jigsaw Puzzles.
 
-# Usage
+<p align="center">
+  <img src="images/lena.gif" alt="demo" />
+</p>
 
-Requirements:
+# Installation
 
-- `python 2.6+`
-- `numpy`
-- `scipy`
-
-Install with:
+Clone repo:
 
 ``` bash
-git clone https://github.com/nemanja-m/genetic-jigsaw-solver.git
-cd genetic-jigsaw-solver/
+git clone https://github.com/nemanja-m/gaps.git
+cd gaps
+```
+
+Install requirements:
+
+``` bash
+pip install -r requirements.txt
+```
+
+Install project in editable mode:
+
+``` bash
 pip install -e .
-```
-
-Create puzzle from image:
-
-``` bash
-create_puzzle <image> [--piece-size] [--destination]
-```
-
-Run solver:
-
-``` bash
-solve [--image] [--generations] [--population] [--size] [--verbose]
-```
-
-i.e.
-
-``` bash
-create_puzzle images/lena.jpg --piece-size=32 --destination=puzzle.jpg
-
-# => Puzzle output to 'puzzle.jpg'
-
-solve --image=puzzle.jpg --size=32 --generations=30 --population=300 --verbose=True
-
-# => Solver started
 ```
