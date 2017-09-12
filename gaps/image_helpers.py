@@ -59,4 +59,4 @@ def assemble_image(pieces, rows, columns):
         for j in range(columns):
             horizontal_stack.append(pieces[i * columns + j])
         vertical_stack.append(np.hstack(horizontal_stack))
-    return np.vstack(vertical_stack) / 255.0
+    return np.vstack(vertical_stack).astype(np.uint8)
