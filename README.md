@@ -13,20 +13,21 @@ Automatic Genetic Algorithm-Based Solver for Jigsaw Puzzles.
 Clone repo:
 
 ```bash
-git clone https://github.com/nemanja-m/gaps.git
-cd gaps
+$ git clone https://github.com/nemanja-m/gaps.git
+$ cd gaps
 ```
 
 Install requirements:
 
 ```bash
-pip install -r requirements.txt
+$ pip install -r requirements.txt
+$ sudo apt-get install python-tk
 ```
 
 Install project in editable mode:
 
 ```bash
-pip install -e .
+$ pip install -e .
 ```
 
 # Creating puzzles from images
@@ -36,7 +37,7 @@ To create puzzle from image use `create_puzzle` script.
 i.e.
 
 ```bash
-create_puzzle images/butterfly.jpg --size=28 --destination=puzzle.jpg
+$ create_puzzle images/butterfly.jpg --size=28 --destination=puzzle.jpg
 ```
 
 will create puzzle from `lena.jpg` where each puzzle piece is 28x28 pixels.
@@ -60,7 +61,7 @@ In order to solve puzzles, use `gaps` script.
 i.e.
 
 ```bash
-gaps --image=puzzle.jpg --size=28 --generations=20 --population=300
+$ gaps --image=puzzle.jpg --size=28 --generations=20 --population=300
 ```
 
 This will start genetic algorithm with initial population of 300 and 20 generations.
