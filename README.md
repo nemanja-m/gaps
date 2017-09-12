@@ -2,6 +2,8 @@
 
 Automatic Genetic Algorithm-Based Solver for Jigsaw Puzzles.
 
+[![Build Status](https://semaphoreci.com/api/v1/nemanja-m/gaps/branches/master/badge.svg)](https://semaphoreci.com/nemanja-m/gaps)
+
 <p align="center">
   <img src="images/lena.gif" alt="demo" />
 </p>
