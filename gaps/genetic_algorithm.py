@@ -9,13 +9,12 @@ from gaps.progress_bar import print_progress
 
 
 class GeneticAlgorithm(object):
-    ELITISM_FACTOR = 0.02
 
-    def __init__(self, image, piece_size, population_size, generations):
+    def __init__(self, image, piece_size, population_size, generations, elite_size=2):
         self._image = image
         self._piece_size = piece_size
         self._generations = generations
-        self._elite_size = int(population_size * self.ELITISM_FACTOR)
+        self._elite_size = elite_size
         pieces, rows, columns = image_helpers.flatten_image(image, piece_size, indexed=True)
         self._population = [Individual(pieces, rows, columns) for _ in range(population_size)]
         self._pieces = pieces

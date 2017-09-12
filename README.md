@@ -37,19 +37,21 @@ To create puzzle from image use `create_puzzle` script.
 i.e.
 
 ```bash
-$ create_puzzle images/butterfly.jpg --size=28 --destination=puzzle.jpg
+$ create_puzzle images/pillars.jpg --size=48 --destination=puzzle.jpg
+
+[SUCCESS] Puzzle created with 420 pieces
+
 ```
 
-will create puzzle from `lena.jpg` where each puzzle piece is 28x28 pixels.
-Run `create_puzzle --help` for detailed help.
-
-Puzzle is created from input image by shuffling pieces.
+will create puzzle with `420` pieces from `images/pillars.jpg` where each piece is 48x48 pixels.
 
 <div align="center">
-  <img src="images/butterfly.jpg" alt="original" width="250" height="180" />
+  <img src="images/pillars.jpg" alt="original" width="250" height="180" />
   &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-  <img src="images/demo_puzzle.jpg" alt="original" width="250" height="180" />
+  <img src="images/demo_puzzle.jpg" alt="puzzle" width="250" height="180" />
 </div>
+
+Run `create_puzzle --help` for detailed help.
 
 __NOTE__ *Created puzzle dimensions may be smaller then original image depending on
 given puzzle piece size. Maximum possible rectangle is cropped from original image.*
@@ -61,10 +63,10 @@ In order to solve puzzles, use `gaps` script.
 i.e.
 
 ```bash
-$ gaps --image=puzzle.jpg --size=28 --generations=20 --population=300
+$ gaps --image=puzzle.jpg --size=48 --generations=20 --population=600
 ```
 
-This will start genetic algorithm with initial population of 300 and 20 generations.
+This will start genetic algorithm with initial population of 600 and 20 generations.
 
 Following options are provided:
 
