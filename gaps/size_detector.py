@@ -36,7 +36,7 @@ class SizeDetector(object):
         """Detects piece size in pixels"""
 
         if len(self._possible_sizes) == 1:
-            return possible_sizes[0]
+            return self._possible_sizes[0]
 
         blue, green, red = cv2.split(self._image)
 
@@ -73,7 +73,7 @@ class SizeDetector(object):
         for contour in contours:
             _, _, width, height = cv2.boundingRect(contour)
             if self._is_valid_square(width, height):
-                candidates.append(width)
+                candidates.append((width + height) / 2)
         return candidates
 
     def _is_valid_square(self, width, height):
@@ -104,13 +104,13 @@ class SizeDetector(object):
         """Calculates every possible piece size for given input image"""
         rows, columns, _ = self._image.shape
         min_size = 28
-        max_size = min(rows, columns) / 2
+        max_size = 64
 
-        for size in range(min_size, max_size):
+        for size in range(min_size, max_size + 1):
             if rows % size == 0 and columns % size == 0:
                 self._possible_sizes.append(size)
 
-    def _filter_image(self, channel):
-        _, thresh = cv2.threshold(channel, 200, 255, cv2.THRESH_BINARY)
+    def _filter_image(self, image):
+        _, thresh = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
         opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, (5, 5), iterations=3)
         return cv2.bitwise_not(opened)
