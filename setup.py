@@ -15,7 +15,8 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "matplotlib"
+        "matplotlib",
+        "opencv-python"
     ],
     scripts=[
         "bin/create_puzzle",
