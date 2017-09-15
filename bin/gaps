@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from time import time
 from scipy import misc
 from gaps.genetic_algorithm import GeneticAlgorithm
-from gaps.size_detector import detect_piece_size
+from gaps.size_detector import SizeDetector
 from gaps.plot import Plot
 
 GENERATIONS = 20
@@ -40,7 +40,8 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     image = misc.imread(args.image)
-    piece_size = detect_piece_size(image)
+    detector = SizeDetector(image)
+    piece_size = detector.detect_piece_size()
 
     print "\n=== Population:  {}".format(args.population)
     print "=== Generations: {}".format(args.generations)
