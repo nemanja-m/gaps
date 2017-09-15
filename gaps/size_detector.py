@@ -52,14 +52,12 @@ def find_nearest_size(size_candidate, possible_sizes):
         return left_size
 
 def detect_piece_size(image):
-    blue, green, red = cv2.split(image)
+    blue, green, red = cv2.split(image.copy())
 
     rows, columns = red.shape
     possible_sizes = possible_piece_sizes(rows, columns)
-    print possible_sizes
 
     if len(possible_sizes) == 1:
-        print possible_sizes[0]
         return possible_sizes[0]
 
     channels = [
@@ -83,9 +81,4 @@ def detect_piece_size(image):
         sizes_map[nearest_size] += 1
 
     piece_size = max(sizes_map, key=sizes_map.get)
-    print piece_size
     return piece_size
-
-
-image = cv2.imread('out.jpg')
-detect_piece_size(image.copy())
