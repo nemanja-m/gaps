@@ -1,6 +1,6 @@
 # gaps
 
-Automatic Genetic Algorithm-Based Solver for Jigsaw Puzzles.
+Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection.
 
 [![Build Status](https://semaphoreci.com/api/v1/nemanja-m/gaps/branches/master/badge.svg)](https://semaphoreci.com/nemanja-m/gaps)
 
@@ -94,6 +94,17 @@ $ gaps --image=puzzle.jpg --generations=20 --population=600 --size=48
 __NOTE__ *Size detection feature works for the most images but there are some edge cases
 where size detection fails and detects incorrect piece size. In that case you can
 explicitly set piece size.*
+
+## Termination condition
+
+The termination condition of a Genetic Algorithm is important in determining when a GA run will end.
+It has been observed that initially, the GA progresses very fast with better solutions coming in every few iterations,
+but this tends to saturate in the later stages where the improvements are very small.
+
+`gaps` will terminate:
+
+* when there has been no improvement in the population for `X` iterations, or
+* when it reachs an absolute number of generations
 
 # License
 
