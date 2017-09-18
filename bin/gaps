@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 from time import time
 from scipy import misc
 from gaps.genetic_algorithm import GeneticAlgorithm
+from gaps.size_detector import SizeDetector
 from gaps.plot import Plot
 
 GENERATIONS = 20
 POPULATION = 200
-PIECE_SIZE = 28
 
 
 def show_image(img, title):
@@ -31,22 +31,29 @@ def parse_arguments():
     parser.add_argument("--image", type=str, default="out.jpg", help="Input image.")
     parser.add_argument("--generations", type=int, default=GENERATIONS, help="Num of generations.")
     parser.add_argument("--population", type=int, default=POPULATION, help="Size of population.")
-    parser.add_argument("--size", type=int, default=PIECE_SIZE, help="Single piece size.")
+    parser.add_argument("--size", type=int, help="Single piece size in pixels.")
     parser.add_argument("--verbose", action="store_true", help="Show best individual after each generation.")
     parser.add_argument("--save", action="store_true", help="Save puzzle result as image.")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
+
     image = misc.imread(args.image)
+
+    if args.size is not None:
+        piece_size = args.size
+    else:
+        detector = SizeDetector(image)
+        piece_size = detector.detect_piece_size()
 
     print "\n=== Population:  {}".format(args.population)
     print "=== Generations: {}".format(args.generations)
-    print "=== Piece size:  {} px\n".format(args.size)
+    print "=== Piece size:  {} px\n".format(piece_size)
 
     # Let the games begin! And may the odds be in your favor!
     start = time()
-    algorithm = GeneticAlgorithm(image, args.size, args.population, args.generations)
+    algorithm = GeneticAlgorithm(image, piece_size, args.population, args.generations)
     solution = algorithm.start_evolution(args.verbose)
     end = time()
 

@@ -17,8 +17,8 @@ import numpy as np
 from scipy import misc
 from gaps import image_helpers
 
-MIN_PIECE_SIZE = 16
-MAX_PIECE_SIZE = 128
+MIN_PIECE_SIZE = 28
+MAX_PIECE_SIZE = 64
 DEFAULT_PIECE_SIZE = 28
 
 COLOR_STRING = {

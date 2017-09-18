@@ -8,8 +8,13 @@ warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 class Plot(object):
 
     def __init__(self, image, title="Initial problem"):
+        aspect_ratio = image.shape[0] / float(image.shape[1])
+
+        width = 8
+        height = width * aspect_ratio
+        fig = plt.figure(figsize=(width, height), frameon=False)
+
         # Let image fill the figure
-        fig = plt.figure(figsize=(9, 7), frameon=False)
         ax = plt.Axes(fig, [0., 0., 1., .9])
         ax.set_axis_off()
         fig.add_axes(ax)
