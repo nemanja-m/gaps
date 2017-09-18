@@ -27,6 +27,19 @@ class SizeDetector(object):
     # Max absolute difference between width and height of bounding rectangle
     RECTANGLE_TOLERANCE = 3
 
+    # Contour area / area of contours bounding rectangle
+    EXTENT_RATIO = 0.75
+
+    # Piece sizes bounds
+    MIN_SIZE = 28
+    MAX_SIZE = 64
+
+    # Coefficient for MIN puzzle piece size
+    MIN_SIZE_C = 0.9
+
+    # Coefficient for MAX puzzle piece size
+    MAX_SIZE_C = 1.3
+
     def __init__(self, image):
         self._image = image.copy()
         self._possible_sizes = []
@@ -69,19 +82,29 @@ class SizeDetector(object):
                                           cv2.RETR_LIST,
                                           cv2.CHAIN_APPROX_SIMPLE)
 
-        candidates = []
+        size_candidates = []
         for contour in contours:
-            _, _, width, height = cv2.boundingRect(contour)
-            if self._is_valid_square(width, height):
-                candidates.append((width + height) / 2)
-        return candidates
+            bounding_rect = cv2.boundingRect(contour)
+            contour_area = cv2.contourArea(contour)
+            if self._is_valid_contour(contour_area, bounding_rect):
+                candidate = (bounding_rect[2] + bounding_rect[3]) / 2
+                size_candidates.append(candidate)
 
-    def _is_valid_square(self, width, height):
-        is_valid_lower_range = width > self._possible_sizes[0]
-        is_valid_upper_range = width < self._image.shape[1]
+        return size_candidates
+
+    def _is_valid_contour(self, contour_area, bounding_rect):
+        _, _, width, height = bounding_rect
+        extent = float(contour_area) / (width * height)
+
+        lower_limit = self.MIN_SIZE_C * self._possible_sizes[0]
+        upper_limit = self.MAX_SIZE_C * self._possible_sizes[-1]
+
+        is_valid_lower_range = width > lower_limit and height > lower_limit
+        is_valid_upper_range = width < upper_limit and height < upper_limit
         is_square = abs(width - height) < self.RECTANGLE_TOLERANCE
+        is_extent_valid = extent >= self.EXTENT_RATIO
 
-        return is_valid_lower_range and is_valid_upper_range and is_square
+        return is_valid_lower_range and is_valid_upper_range and is_square and is_extent_valid
 
     def _find_nearest_size(self, size_candidate):
         index = bisect.bisect_right(self._possible_sizes, size_candidate)
@@ -103,14 +126,13 @@ class SizeDetector(object):
     def _calculate_possible_sizes(self):
         """Calculates every possible piece size for given input image"""
         rows, columns, _ = self._image.shape
-        min_size = 28
-        max_size = 64
 
-        for size in range(min_size, max_size + 1):
+        for size in range(self.MIN_SIZE, self.MAX_SIZE + 1):
             if rows % size == 0 and columns % size == 0:
                 self._possible_sizes.append(size)
 
     def _filter_image(self, image):
         _, thresh = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
         opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, (5, 5), iterations=3)
+
         return cv2.bitwise_not(opened)
