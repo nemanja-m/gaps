@@ -10,6 +10,8 @@ from gaps.progress_bar import print_progress
 
 class GeneticAlgorithm(object):
 
+    TERMINATION_THRESHOLD = 10
+
     def __init__(self, image, piece_size, population_size, generations, elite_size=2):
         self._image = image
         self._piece_size = piece_size
@@ -24,10 +26,13 @@ class GeneticAlgorithm(object):
             plot = Plot(self._image)
 
         ImageAnalysis.analyze_image(self._pieces)
+
         fittest = None
+        best_fitness_score = float("-inf")
+        termination_counter = 0
 
         for generation in range(self._generations):
-            print_progress(generation, self._generations - 1, prefix="Solving puzzle:")
+            print_progress(generation, self._generations - 1, prefix="=== Solving puzzle: ")
 
             new_population = []
 
@@ -44,6 +49,17 @@ class GeneticAlgorithm(object):
                 new_population.append(child)
 
             fittest = self._best_individual()
+
+            if fittest.fitness <= best_fitness_score:
+                termination_counter += 1
+            else:
+                best_fitness_score = fittest.fitness
+
+            if termination_counter == self.TERMINATION_THRESHOLD:
+                print "\n\n=== GA terminated"
+                print "=== There was no improvement for {} generations".format(self.TERMINATION_THRESHOLD)
+                return fittest
+
             self._population = new_population
 
             if verbose:
