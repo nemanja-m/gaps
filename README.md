@@ -63,7 +63,7 @@ In order to solve puzzles, use `gaps` script.
 i.e.
 
 ```bash
-$ gaps --image=puzzle.jpg --size=48 --generations=20 --population=600
+$ gaps --image=puzzle.jpg --generations=20 --population=600
 ```
 
 This will start genetic algorithm with initial population of 600 and 20 generations.
@@ -80,6 +80,20 @@ Option          | Description
 `--save`        | Save puzzle solution as image
 
 Run `gaps --help` for detailed help.
+
+## Size detection
+
+If you don't explicitly provide `--size` argument to `gaps`, piece size will be detected automatically.
+
+However, you can always provide `gaps` with `--size` argument explicitly:
+
+```bash
+$ gaps --image=puzzle.jpg --generations=20 --population=600 --size=48
+```
+
+__NOTE__ *Size detection feature works for the most images but there are some edge cases
+where size detection fails and detects incorrect piece size. In that case you can
+explicitly set piece size.*
 
 # License
 
