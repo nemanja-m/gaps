@@ -39,7 +39,7 @@ class ImageAnalysis(object):
         # Calculate dissimilarity measures and best matches for each piece.
         iterations = len(pieces) - 1
         for first in range(iterations):
-            print_progress(first, iterations - 1, prefix="Analyzing image:")
+            print_progress(first, iterations - 1, prefix="=== Analyzing image:")
             for second in range(first + 1, len(pieces)):
                 for orientation in ["LR", "TD"]:
                     update_best_match_table(pieces[first], pieces[second])
