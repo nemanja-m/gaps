@@ -1,3 +1,4 @@
+from __future__ import print_function
 from operator import attrgetter
 from gaps import image_helpers
 from gaps.selection import roulette_selection
@@ -56,8 +57,8 @@ class GeneticAlgorithm(object):
                 best_fitness_score = fittest.fitness
 
             if termination_counter == self.TERMINATION_THRESHOLD:
-                print "\n\n=== GA terminated"
-                print "=== There was no improvement for {} generations".format(self.TERMINATION_THRESHOLD)
+                print("\n\n=== GA terminated")
+                print("=== There was no improvement for {} generations".format(self.TERMINATION_THRESHOLD))
                 return fittest
 
             self._population = new_population

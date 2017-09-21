@@ -3,6 +3,11 @@
 import random
 import bisect
 
+try:
+    xrange          # Python 2
+except NameError:
+    xrange = range  # Python 3
+
 
 def roulette_selection(population, elites=4):
     """Roulette wheel selection.
