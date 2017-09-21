@@ -9,8 +9,8 @@ given number of generations and population. At the end, solution image is displa
 
 import argparse
 import matplotlib.pyplot as plt
+import cv2
 from time import time
-from scipy import misc
 from gaps.genetic_algorithm import GeneticAlgorithm
 from gaps.size_detector import SizeDetector
 from gaps.plot import Plot
@@ -39,7 +39,7 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
 
-    image = misc.imread(args.image)
+    image = cv2.imread(args.image)
 
     if args.size is not None:
         piece_size = args.size
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     solution_image_name = args.image.split(".")[0] + "_solution.jpg"
 
     if args.save:
-        misc.imsave(solution_image_name, solution_image)
+        cv2.imwrite(solution_image_name, solution_image)
         print "=== Result saved as '{}'".format(solution_image_name)
 
     print "=== Close figure to exit"

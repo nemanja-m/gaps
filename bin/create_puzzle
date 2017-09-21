@@ -13,8 +13,8 @@ depending on given piece size.
 import argparse
 import os.path
 import numpy as np
+import cv2
 
-from scipy import misc
 from gaps import image_helpers
 
 MIN_PIECE_SIZE = 28
@@ -29,7 +29,7 @@ COLOR_STRING = {
 
 def create_puzzle(image_path, output_path, piece_size):
     """Creates jigsaw puzzle from input image"""
-    image = misc.imread(image_path)
+    image = cv2.imread(image_path)
     pieces, rows, columns = image_helpers.flatten_image(image, piece_size)
 
     # Randomize pieces in order to make puzzle
@@ -38,7 +38,7 @@ def create_puzzle(image_path, output_path, piece_size):
     # Create puzzle by stacking pieces
     puzzle = image_helpers.assemble_image(pieces, rows, columns)
 
-    misc.imsave(output_path, puzzle)
+    cv2.imwrite(output_path, puzzle)
     print_messages(["Puzzle created with {} pieces".format(len(pieces))])
 
 

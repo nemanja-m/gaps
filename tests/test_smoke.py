@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
+import cv2
 
-from scipy import misc
 from gaps import image_helpers
 from gaps.genetic_algorithm import GeneticAlgorithm
 
@@ -9,7 +9,7 @@ GENERATIONS = 3
 POPULATION = 100
 PIECE_SIZE = 128
 
-image = misc.imread("images/baboon.jpg")
+image = cv2.imread("images/baboon.jpg")
 
 @pytest.fixture
 def puzzle():
