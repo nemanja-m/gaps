@@ -119,7 +119,8 @@ class Crossover(object):
         piece_candidate = (priority, (position, piece_id), relative_piece)
         heapq.heappush(self._candidate_pieces, piece_candidate)
 
-    def _available_boundaries(self, (row, column)):
+    def _available_boundaries(self, row_and_column):
+        (row, column) = row_and_column
         boundaries = []
 
         if not self._is_kernel_full():
@@ -140,7 +141,8 @@ class Crossover(object):
     def _is_kernel_full(self):
         return len(self._kernel) == self._pieces_length
 
-    def _is_in_range(self, (row, column)):
+    def _is_in_range(self, row_and_column):
+        (row, column) = row_and_column
         return self._is_row_in_range(row) and self._is_column_in_range(column)
 
     def _is_row_in_range(self, row):
@@ -151,7 +153,8 @@ class Crossover(object):
         current_columns = abs(min(self._min_column, column)) + abs(max(self._max_column, column))
         return current_columns < self._child_columns
 
-    def _update_kernel_boundaries(self, (row, column)):
+    def _update_kernel_boundaries(self, row_and_column):
+        (row, column) = row_and_column
         self._min_row = min(self._min_row, row)
         self._max_row = max(self._max_row, row)
         self._min_column = min(self._min_column, column)
