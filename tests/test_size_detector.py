@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
+import cv2
 
-from scipy import misc
 from gaps import image_helpers
 from gaps.size_detector import SizeDetector
 
@@ -17,7 +17,7 @@ images = [
 ]
 
 def create_puzzle(image_path, piece_size):
-    image = misc.imread(image_path)
+    image = cv2.imread(image_path)
     pieces, rows, columns = image_helpers.flatten_image(image, piece_size)
     np.random.shuffle(pieces)
     return image_helpers.assemble_image(pieces, rows, columns)
