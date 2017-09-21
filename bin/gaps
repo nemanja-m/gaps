@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     print "\n=== Population:  {}".format(args.population)
     print "=== Generations: {}".format(args.generations)
-    print "=== Piece size:  {} px\n".format(piece_size)
+    print "=== Piece size:  {} px".format(piece_size)
 
     # Let the games begin! And may the odds be in your favor!
     start = time()

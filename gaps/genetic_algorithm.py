@@ -23,6 +23,8 @@ class GeneticAlgorithm(object):
         self._pieces = pieces
 
     def start_evolution(self, verbose):
+        print("=== Pieces:      {}\n".format(len(self._pieces)))
+
         if verbose:
             plot = Plot(self._image)
 
