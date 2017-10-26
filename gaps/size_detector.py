@@ -51,6 +51,20 @@ class SizeDetector(object):
         if len(self._possible_sizes) == 1:
             return self._possible_sizes[0]
 
+        size_candidates = []
+        for image in self._split_channel_images():
+            candidates = self._find_size_candidates(image)
+            size_candidates.extend(candidates)
+
+        sizes_probability = { size: 0 for size in self._possible_sizes }
+        for size_candidate in size_candidates:
+            nearest_size = self._find_nearest_size(size_candidate)
+            sizes_probability[nearest_size] += 1
+
+        piece_size = max(sizes_probability, key=sizes_probability.get)
+        return piece_size
+
+    def _split_channel_images(self):
         blue, green, red = cv2.split(self._image)
 
         split_channel_images = [
@@ -62,18 +76,7 @@ class SizeDetector(object):
             cv2.add(green, blue)
         ]
 
-        size_candidates = []
-        for image in split_channel_images:
-            candidates = self._find_size_candidates(image)
-            size_candidates.extend(candidates)
-
-        sizes_probability = { size: 0 for size in self._possible_sizes }
-        for size_candidate in size_candidates:
-            nearest_size = self._find_nearest_size(size_candidate)
-            sizes_probability[nearest_size] += 1
-
-        piece_size = max(sizes_probability, key=sizes_probability.get)
-        return piece_size
+        return split_channel_images
 
     def _find_size_candidates(self, image):
         binary_image = self._filter_image(image)
