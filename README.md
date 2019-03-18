@@ -1,4 +1,8 @@
-# gaps
+<h1 align=center>
+<img src="Logo/LogoHorizontal.png" width=50%>
+</h1>
+
+
 
 Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection.
 
