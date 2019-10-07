@@ -9,6 +9,7 @@ Note that created puzzle size may differ from original image size
 depending on given piece size.
 
 """
+from __future__ import print_function
 
 import argparse
 import os.path
@@ -46,7 +47,7 @@ def print_messages(messages, level="SUCCESS"):
     """Prints given messages as colored strings"""
     print
     for message in messages:
-        print COLOR_STRING[level].format(message)
+        print(COLOR_STRING[level].format(message))
 
 
 def validate_arguments(args):

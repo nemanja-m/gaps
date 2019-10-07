@@ -31,7 +31,7 @@ class Crossover(object):
     def child(self):
         pieces = [None] * self._pieces_length
 
-        for piece, (row, column) in self._kernel.iteritems():
+        for piece, (row, column) in self._kernel.items():
             index = (row - self._min_row) * self._child_columns + (column - self._min_column)
             pieces[index] = self._parents[0].piece_by_id(piece)
 
@@ -131,7 +131,7 @@ class Crossover(object):
                 "L": (row, column - 1)
             }
 
-            for orientation, position in positions.iteritems():
+            for orientation, position in positions.items():
                 if position not in self._taken_positions and self._is_in_range(position):
                     self._update_kernel_boundaries(position)
                     boundaries.append((orientation, position))
