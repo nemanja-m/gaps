@@ -1,12 +1,13 @@
-import matplotlib.pyplot as plt
 import warnings
+
 import matplotlib.cbook
+import matplotlib.pyplot as plt
+
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 
 class Plot(object):
-
     def __init__(self, image, title="Initial problem"):
         aspect_ratio = image.shape[0] / float(image.shape[1])
 
@@ -15,7 +16,7 @@ class Plot(object):
         fig = plt.figure(figsize=(width, height), frameon=False)
 
         # Let image fill the figure
-        ax = plt.Axes(fig, [0., 0., 1., .9])
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 0.9])
         ax.set_axis_off()
         fig.add_axes(ax)
 

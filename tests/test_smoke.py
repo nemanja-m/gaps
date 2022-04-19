@@ -1,21 +1,24 @@
-import pytest
+import cv2 as cv
 import numpy as np
-import cv2
+import pytest
 
 from gaps import image_helpers
 from gaps.genetic_algorithm import GeneticAlgorithm
+
 
 GENERATIONS = 3
 POPULATION = 100
 PIECE_SIZE = 128
 
-image = cv2.imread("images/baboon.jpg")
+image = cv.imread("images/baboon.jpg")
+
 
 @pytest.fixture
 def puzzle():
     pieces, rows, columns = image_helpers.flatten_image(image, PIECE_SIZE)
     np.random.shuffle(pieces)
     return image_helpers.assemble_image(pieces, rows, columns)
+
 
 def test_puzzle_solver(puzzle):
     algorithm = GeneticAlgorithm(puzzle, PIECE_SIZE, POPULATION, GENERATIONS)

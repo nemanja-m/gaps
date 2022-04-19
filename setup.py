@@ -8,17 +8,7 @@ setup(
     description="Genetic-Algorithm based jigsaw puzzle solver",
     license="MIT",
     url="https://github.com/nemanja-m/gaps",
-    packages=[
-        "gaps",
-        "tests"
-    ],
-    install_requires=[
-        "numpy",
-        "matplotlib",
-        "opencv-python"
-    ],
-    scripts=[
-        "bin/create_puzzle",
-        "bin/gaps"
-    ]
+    packages=["gaps", "tests"],
+    install_requires=["numpy", "matplotlib", "opencv-python"],
+    scripts=["bin/create_puzzle", "bin/gaps"],
 )

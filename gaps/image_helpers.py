@@ -1,4 +1,5 @@
 import numpy as np
+
 from gaps.piece import Piece
 
 
@@ -24,7 +25,12 @@ def flatten_image(image, piece_size, indexed=False):
     # Crop pieces from original image
     for y in range(rows):
         for x in range(columns):
-            left, top, w, h = x * piece_size, y * piece_size, (x + 1) * piece_size, (y + 1) * piece_size
+            left, top, w, h = (
+                x * piece_size,
+                y * piece_size,
+                (x + 1) * piece_size,
+                (y + 1) * piece_size,
+            )
             piece = np.empty((piece_size, piece_size, image.shape[2]))
             piece[:piece_size, :piece_size, :] = image[top:h, left:w, :]
             pieces.append(piece)
@@ -38,8 +44,8 @@ def flatten_image(image, piece_size, indexed=False):
 def assemble_image(pieces, rows, columns):
     """Assembles image from pieces.
 
-    Given an array of pieces and desired image dimensions, function
-    assembles image by stacking pieces.
+    Given an array of pieces and desired image dimensions, function assembles
+    image by stacking pieces.
 
     :params pieces:  Image pieces as an array.
     :params rows:    Number of rows in resulting image.

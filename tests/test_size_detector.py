@@ -1,26 +1,22 @@
-import pytest
+import cv2 as cv
 import numpy as np
-import cv2
+import pytest
 
 from gaps import image_helpers
 from gaps.size_detector import SizeDetector
 
 
-sizes = [
-    28, 32, 48, 56, 64
-]
+sizes = [28, 32, 48, 56, 64]
 
-images = [
-    "images/lena.jpg",
-    "images/island.jpg",
-    "images/pillars.jpg"
-]
+images = ["images/lena.jpg", "images/island.jpg", "images/pillars.jpg"]
+
 
 def create_puzzle(image_path, piece_size):
-    image = cv2.imread(image_path)
+    image = cv.imread(image_path)
     pieces, rows, columns = image_helpers.flatten_image(image, piece_size)
     np.random.shuffle(pieces)
     return image_helpers.assemble_image(pieces, rows, columns)
+
 
 @pytest.mark.parametrize("image", images)
 def test_size_detection(image):

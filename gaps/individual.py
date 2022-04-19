@@ -1,4 +1,5 @@
 import numpy as np
+
 from gaps import image_helpers
 from gaps.image_analysis import ImageAnalysis
 
@@ -35,10 +36,12 @@ class Individual(object):
             np.random.shuffle(self.pieces)
 
         # Map piece ID to index in Individual's list
-        self._piece_mapping = {piece.id: index for index, piece in enumerate(self.pieces)}
+        self._piece_mapping = {
+            piece.id: index for index, piece in enumerate(self.pieces)
+        }
 
     def __getitem__(self, key):
-        return self.pieces[key * self.columns:(key + 1) * self.columns]
+        return self.pieces[key * self.columns : (key + 1) * self.columns]
 
     @property
     def fitness(self):
@@ -53,12 +56,16 @@ class Individual(object):
             for i in range(self.rows):
                 for j in range(self.columns - 1):
                     ids = (self[i][j].id, self[i][j + 1].id)
-                    fitness_value += ImageAnalysis.get_dissimilarity(ids, orientation="LR")
+                    fitness_value += ImageAnalysis.get_dissimilarity(
+                        ids, orientation="LR"
+                    )
             # For each two adjacent pieces in columns
             for i in range(self.rows - 1):
                 for j in range(self.columns):
                     ids = (self[i][j].id, self[i + 1][j].id)
-                    fitness_value += ImageAnalysis.get_dissimilarity(ids, orientation="TD")
+                    fitness_value += ImageAnalysis.get_dissimilarity(
+                        ids, orientation="TD"
+                    )
 
             self._fitness = self.FITNESS_FACTOR / fitness_value
 
