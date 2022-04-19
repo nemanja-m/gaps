@@ -5,16 +5,17 @@ from gaps.progress_bar import print_progress
 class ImageAnalysis(object):
     """Cache for dissimilarity measures of individuals
 
-    Class have static lookup table where keys are Piece's id's.
-    For each pair puzzle pieces there is a map with values representing
-    dissimilarity measure between them. Each next generation have greater chance to use
-    cached value instead of calculating measure again.
+    Class have static lookup table where keys are Piece's id's.  For each pair
+    puzzle pieces there is a map with values representing dissimilarity measure
+    between them. Each next generation have greater chance to use cached value
+    instead of calculating measure again.
 
     Attributes:
         dissimilarity_measures  Dictionary with cached dissimilarity measures for puzzle pieces
         best_match_table        Dictionary with best matching piece for each edge and each piece
 
     """
+
     dissimilarity_measures = {}
     best_match_table = {}
 
@@ -23,18 +24,19 @@ class ImageAnalysis(object):
         for piece in pieces:
             # For each edge we keep best matches as a sorted list.
             # Edges with lower dissimilarity_measure have higher priority.
-            cls.best_match_table[piece.id] = {
-                "T": [],
-                "R": [],
-                "D": [],
-                "L": []
-            }
+            cls.best_match_table[piece.id] = {"T": [], "R": [], "D": [], "L": []}
 
         def update_best_match_table(first_piece, second_piece):
             measure = dissimilarity_measure(first_piece, second_piece, orientation)
-            cls.put_dissimilarity((first_piece.id, second_piece.id), orientation, measure)
-            cls.best_match_table[second_piece.id][orientation[0]].append((first_piece.id, measure))
-            cls.best_match_table[first_piece.id][orientation[1]].append((second_piece.id, measure))
+            cls.put_dissimilarity(
+                (first_piece.id, second_piece.id), orientation, measure
+            )
+            cls.best_match_table[second_piece.id][orientation[0]].append(
+                (first_piece.id, measure)
+            )
+            cls.best_match_table[first_piece.id][orientation[1]].append(
+                (second_piece.id, measure)
+            )
 
         # Calculate dissimilarity measures and best matches for each piece.
         iterations = len(pieces) - 1

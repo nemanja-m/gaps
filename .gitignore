@@ -44,3 +44,6 @@ ENV/
 
 # PyCharm project
 .idea
+
+# Rope
+.ropeproject/

@@ -4,7 +4,7 @@ import random
 import bisect
 
 try:
-    xrange          # Python 2
+    xrange  # Python 2
 except NameError:
     xrange = range  # Python 3
 
@@ -25,7 +25,9 @@ def roulette_selection(population, elites=4):
 
     """
     fitness_values = [individual.fitness for individual in population]
-    probability_intervals = [sum(fitness_values[:i + 1]) for i in range(len(fitness_values))]
+    probability_intervals = [
+        sum(fitness_values[: i + 1]) for i in range(len(fitness_values))
+    ]
 
     def select_individual():
         """Selects random individual from population based on fitess value"""

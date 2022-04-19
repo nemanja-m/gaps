@@ -1,12 +1,14 @@
 from __future__ import print_function
+
 from operator import attrgetter
+
 from gaps import image_helpers
-from gaps.selection import roulette_selection
 from gaps.crossover import Crossover
-from gaps.individual import Individual
 from gaps.image_analysis import ImageAnalysis
+from gaps.individual import Individual
 from gaps.plot import Plot
 from gaps.progress_bar import print_progress
+from gaps.selection import roulette_selection
 
 
 class GeneticAlgorithm(object):
@@ -18,8 +20,12 @@ class GeneticAlgorithm(object):
         self._piece_size = piece_size
         self._generations = generations
         self._elite_size = elite_size
-        pieces, rows, columns = image_helpers.flatten_image(image, piece_size, indexed=True)
-        self._population = [Individual(pieces, rows, columns) for _ in range(population_size)]
+        pieces, rows, columns = image_helpers.flatten_image(
+            image, piece_size, indexed=True
+        )
+        self._population = [
+            Individual(pieces, rows, columns) for _ in range(population_size)
+        ]
         self._pieces = pieces
 
     def start_evolution(self, verbose):
@@ -35,7 +41,9 @@ class GeneticAlgorithm(object):
         termination_counter = 0
 
         for generation in range(self._generations):
-            print_progress(generation, self._generations - 1, prefix="=== Solving puzzle: ")
+            print_progress(
+                generation, self._generations - 1, prefix="=== Solving puzzle: "
+            )
 
             new_population = []
 
@@ -43,7 +51,9 @@ class GeneticAlgorithm(object):
             elite = self._get_elite_individuals(elites=self._elite_size)
             new_population.extend(elite)
 
-            selected_parents = roulette_selection(self._population, elites=self._elite_size)
+            selected_parents = roulette_selection(
+                self._population, elites=self._elite_size
+            )
 
             for first_parent, second_parent in selected_parents:
                 crossover = Crossover(first_parent, second_parent)
@@ -60,13 +70,20 @@ class GeneticAlgorithm(object):
 
             if termination_counter == self.TERMINATION_THRESHOLD:
                 print("\n\n=== GA terminated")
-                print("=== There was no improvement for {} generations".format(self.TERMINATION_THRESHOLD))
+                print(
+                    "=== There was no improvement for {} generations".format(
+                        self.TERMINATION_THRESHOLD
+                    )
+                )
                 return fittest
 
             self._population = new_population
 
             if verbose:
-                plot.show_fittest(fittest.to_image(), "Generation: {} / {}".format(generation + 1, self._generations))
+                plot.show_fittest(
+                    fittest.to_image(),
+                    "Generation: {} / {}".format(generation + 1, self._generations),
+                )
 
         return fittest
 
