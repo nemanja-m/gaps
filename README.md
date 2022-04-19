@@ -110,6 +110,26 @@ but this tends to saturate in the later stages where the improvements are very s
 * when there has been no improvement in the population for `X` iterations, or
 * when it reachs an absolute number of generations
 
+# References
+
+BibTeX entry:
+
+```
+@article{Sholomon2016,
+  doi = {10.1007/s10710-015-9258-0},
+  url = {https://doi.org/10.1007/s10710-015-9258-0},
+  year = {2016},
+  month = feb,
+  publisher = {Springer Science and Business Media {LLC}},
+  volume = {17},
+  number = {3},
+  pages = {291--313},
+  author = {Dror Sholomon and Omid E. David and Nathan S. Netanyahu},
+  title = {An automatic solver for very large jigsaw puzzles using genetic algorithms},
+  journal = {Genetic Programming and Evolvable Machines}
+}
+```
+
 # License
 
 This project as available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT)
