@@ -1,5 +1,5 @@
 numpy==1.21.0
 opencv-python==4.2.0.32
-matplotlib==2.0.0
-pytest==3.2.1
+matplotlib==3.5.1
+pytest==7.1.1
 pillow==9.0.1
