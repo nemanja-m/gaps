@@ -6,7 +6,7 @@
 
 Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection.
 
-[![Build Status](https://semaphoreci.com/api/v1/nemanja-m/gaps/branches/master/badge.svg)](https://semaphoreci.com/nemanja-m/gaps)
+[![Build Status](https://nemanja-m.semaphoreci.com/badges/gaps/branches/master.svg?style=shields&key=b7f45215-7856-4984-881e-90376bbb9e04)](https://nemanja-m.semaphoreci.com/projects/gaps)
 
 <p align="center">
   <img src="images/lena.gif" alt="demo" />
