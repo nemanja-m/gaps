@@ -1,5 +1,5 @@
 numpy==1.22.0
-opencv-python==4.2.0.32
+opencv-python==4.4.0.46
 matplotlib==3.5.1
 pytest==7.1.1
 pillow==9.0.1
