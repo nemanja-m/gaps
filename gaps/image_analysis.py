@@ -1,3 +1,4 @@
+from typing import List, Tuple, Dict
 from gaps.fitness import dissimilarity_measure
 from gaps.progress_bar import print_progress
 
@@ -16,8 +17,8 @@ class ImageAnalysis(object):
 
     """
 
-    dissimilarity_measures = {}
-    best_match_table = {}
+    dissimilarity_measures: Dict[Tuple, Dict[str, float]] = {}
+    best_match_table: Dict[int, Dict[str, List[Tuple[int, float]]]] = {}
 
     @classmethod
     def analyze_image(cls, pieces):
