@@ -34,7 +34,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Load cached virtualenv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache
         with:
           path: .venv
