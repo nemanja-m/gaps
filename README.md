@@ -106,7 +106,7 @@ but this tends to saturate in the later stages where the improvements are very s
 `gaps` will terminate:
 
 * when there has been no improvement in the population for `X` iterations, or
-* when it reachs an absolute number of generations
+* when it reaches an absolute number of generations
 
 # References
 
