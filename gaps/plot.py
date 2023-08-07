@@ -1,10 +1,10 @@
 import warnings
 
-import matplotlib.cbook
+import matplotlib
 import matplotlib.pyplot as plt
 
 
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
+warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
 
 
 class Plot(object):
