@@ -5,6 +5,7 @@ description = "Genetic Algorithm based solver for jigsaw puzzles with piece size
 authors = ["Nemanja Milicevic <the.nemanja.milicevic@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/nemanja-m/gaps"
 repository = "https://github.com/nemanja-m/gaps"
 
   [tool.poetry.dependencies]
@@ -19,6 +20,9 @@ repository = "https://github.com/nemanja-m/gaps"
   ruff = "^0.0.282"
   black = "^23.7.0"
   mypy = "^1.4.1"
+
+[tool.pytest.ini_options]
+addopts = "-ra -v --disable-warnings"
 
 [build-system]
 requires = ["poetry-core"]
