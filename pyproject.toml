@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "gaps"
+version = "0.1.0"
+description = "Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection."
+authors = ["Nemanja Milicevic <the.nemanja.milicevic@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/nemanja-m/gaps"
+
+  [tool.poetry.dependencies]
+  python = "^3.8"
+  pillow = "^10.0.0"
+  numpy = "1.24"
+  matplotlib = "^3.7.2"
+  opencv-python = "^4.8.0.74"
+
+  [tool.poetry.group.dev.dependencies]
+  pytest = "^7.4.0"
+  ruff = "^0.0.282"
+  black = "^23.7.0"
+  mypy = "^1.4.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
