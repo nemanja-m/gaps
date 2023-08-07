@@ -76,7 +76,7 @@ class Individual(object):
         return self.pieces[0].size
 
     def piece_by_id(self, identifier):
-        """"Return specific piece from individual"""
+        """ "Return specific piece from individual"""
         return self.pieces[self._piece_mapping[identifier]]
 
     def to_image(self):

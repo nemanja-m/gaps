@@ -89,5 +89,5 @@ class ImageAnalysis(object):
 
     @classmethod
     def best_match(cls, piece, orientation):
-        """"Returns best match piece for given piece and orientation"""
+        """ "Returns best match piece for given piece and orientation"""
         return cls.best_match_table[piece][orientation][0][0]

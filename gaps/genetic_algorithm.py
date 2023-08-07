@@ -12,7 +12,6 @@ from gaps.selection import roulette_selection
 
 
 class GeneticAlgorithm(object):
-
     TERMINATION_THRESHOLD = 10
 
     def __init__(self, image, piece_size, population_size, generations, elite_size=2):
