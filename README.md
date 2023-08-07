@@ -2,11 +2,9 @@
   <img src="logo/LogoHorizontal.png" width=50%>
 </h1>
 
-
-
 Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection.
 
-[![Build Status](https://nemanja-m.semaphoreci.com/badges/gaps/branches/master.svg?style=shields&key=b7f45215-7856-4984-881e-90376bbb9e04)](https://nemanja-m.semaphoreci.com/projects/gaps)
+[![gaps](https://github.com/nemanja-m/gaps/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nemanja-m/gaps/actions/workflows/ci.yml)
 
 <p align="center">
   <img src="images/lena.gif" alt="demo" />
@@ -17,21 +15,21 @@ Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection
 Clone repo:
 
 ```bash
-$ git clone https://github.com/nemanja-m/gaps.git
-$ cd gaps
+git clone https://github.com/nemanja-m/gaps.git
+cd gaps
 ```
 
 Install requirements:
 
 ```bash
-$ pip install -r requirements.txt
-$ sudo apt-get install python-tk
+pip install -r requirements.txt
+sudo apt-get install python-tk
 ```
 
 Install project in editable mode:
 
 ```bash
-$ pip install -e .
+pip install -e .
 ```
 
 # Creating puzzles from images
@@ -67,7 +65,7 @@ In order to solve puzzles, use `gaps` script.
 i.e.
 
 ```bash
-$ gaps --image=puzzle.jpg --generations=20 --population=600
+gaps --image=puzzle.jpg --generations=20 --population=600
 ```
 
 This will start genetic algorithm with initial population of 600 and 20 generations.
@@ -92,7 +90,7 @@ If you don't explicitly provide `--size` argument to `gaps`, piece size will be 
 However, you can always provide `gaps` with `--size` argument explicitly:
 
 ```bash
-$ gaps --image=puzzle.jpg --generations=20 --population=600 --size=48
+gaps --image=puzzle.jpg --generations=20 --population=600 --size=48
 ```
 
 __NOTE__ *Size detection feature works for the most images but there are some edge cases
@@ -114,7 +112,7 @@ but this tends to saturate in the later stages where the improvements are very s
 
 BibTeX entry:
 
-```
+```text
 @article{Sholomon2016,
   doi = {10.1007/s10710-015-9258-0},
   url = {https://doi.org/10.1007/s10710-015-9258-0},
