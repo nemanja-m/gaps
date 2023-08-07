@@ -10,8 +10,9 @@ def flatten_image(image, piece_size, indexed=False):
     flattened into list. Each list element is PIECE_SIZE x PIECE_SIZE x 3
 
     :params image:      Input image.
-    :params piece_size: Size of single square piece. Each piece is PIECE_SIZE x PIECE_SIZE
-    :params indexed:    If True list of Pieces with IDs will be returned, otherwise just plain list of ndarray pieces
+    :params piece_size: Size of single square piece.
+    :params indexed: If True list of Pieces with IDs will be returned,
+        otherwise list of ndarray pieces
 
     Usage::
 

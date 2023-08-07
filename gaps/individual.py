@@ -47,7 +47,8 @@ class Individual(object):
     def fitness(self):
         """Evaluates fitness value.
 
-        Fitness value is calculated as sum of dissimilarity measures between each adjacent pieces.
+        Fitness value is calculated as sum of dissimilarity measures between
+        each adjacent pieces.
 
         """
         if self._fitness is None:

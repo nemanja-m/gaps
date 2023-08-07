@@ -12,8 +12,8 @@ class ImageAnalysis(object):
     instead of calculating measure again.
 
     Attributes:
-        dissimilarity_measures  Dictionary with cached dissimilarity measures for puzzle pieces
-        best_match_table        Dictionary with best matching piece for each edge and each piece
+        dissimilarity_measures: Dictionary with cached dissimilarity measures for pieces
+        best_match_table: Dictionary with best matching piece for each edge and piece
 
     """
 
