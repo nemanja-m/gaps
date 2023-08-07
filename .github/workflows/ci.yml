@@ -49,6 +49,13 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: poetry install --no-interaction
 
+      - name: Run linter checks
+        run: |
+          source .venv/bin/activate
+          black gaps/ tests/ --check
+          mypy gaps/ tests/ --ignore-missing-imports
+          ruff check gaps/ tests/
+
       - name: Run tests
         run: |
           source .venv/bin/activate
