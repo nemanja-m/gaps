@@ -6,12 +6,12 @@ import cv2 as cv
 class SizeDetector(object):
     """Detects piece size in pixels from given image
 
-    Image is split into RGB single-channel images. Single-channel images are
+    Image is split into BGR single-channel images. Single-channel images are
     combined (R + G, R + B, G + B) in order to cover special edge cases where
-    input image have one dominant color commponent.
+    input image have one dominant color component.
 
     For each single channel-image size candidates are found and candidate with
-    most occurances is selected.
+    most occurrences is selected.
 
     :param image: Input puzzle with square pieces.
 
@@ -21,7 +21,7 @@ class SizeDetector(object):
         >>> from gaps.size_detector import SizeDetector
         >>> image = cv.imread('puzzle.jpg')
         >>> detector = SizeDetector(image)
-        >>> piece_size = detector.detect_piece_size()
+        >>> piece_size = detector.detect()
 
     """
 
@@ -32,8 +32,8 @@ class SizeDetector(object):
     EXTENT_RATIO = 0.75
 
     # Piece sizes bounds
-    MIN_SIZE = 28
-    MAX_SIZE = 64
+    MIN_SIZE = 32
+    MAX_SIZE = 128
 
     # Coefficient for MIN puzzle piece size
     MIN_SIZE_C = 0.9
@@ -46,7 +46,7 @@ class SizeDetector(object):
         self._possible_sizes = []
         self._calculate_possible_sizes()
 
-    def detect_piece_size(self):
+    def detect(self):
         """Detects piece size in pixels"""
 
         if len(self._possible_sizes) == 1:
