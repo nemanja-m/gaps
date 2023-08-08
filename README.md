@@ -2,7 +2,8 @@
   <img src="logo/LogoHorizontal.png" width=50%>
 </h1>
 
-Genetic Algorithm based solver for jigsaw puzzles with piece size auto-detection.
+Genetic Algorithm based solver for jigsaw puzzles with piece size
+auto-detection.
 
 [![gaps](https://github.com/nemanja-m/gaps/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nemanja-m/gaps/actions/workflows/ci.yml)
 
@@ -22,30 +23,25 @@ cd gaps
 Install requirements:
 
 ```bash
-pip install -r requirements.txt
-sudo apt-get install python-tk
+poetry install
 ```
 
-Install project in editable mode:
+Install project locally:
 
 ```bash
-pip install -e .
+pip install .
 ```
 
 # Creating puzzles from images
 
-To create puzzle from image use `create_puzzle` script.
-
-i.e.
+To create puzzle from image use `gaps create`
 
 ```bash
-$ create_puzzle images/pillars.jpg --size=48 --destination=puzzle.jpg
-
-[SUCCESS] Puzzle created with 420 pieces
-
+gaps create images/pillars.jpg puzzle.jpg --size=64
 ```
 
-will create puzzle with `420` pieces from `images/pillars.jpg` where each piece is 48x48 pixels.
+will create puzzle with 240 pieces from `images/pillars.jpg` where each piece is
+64x64 pixels.
 
 <div align="center">
   <img src="images/pillars.jpg" alt="original" width="250" height="180" />
@@ -53,19 +49,18 @@ will create puzzle with `420` pieces from `images/pillars.jpg` where each piece 
   <img src="images/demo_puzzle.jpg" alt="puzzle" width="250" height="180" />
 </div>
 
-Run `create_puzzle --help` for detailed help.
+Run `gaps create --help` for detailed help.
 
-__NOTE__ *Created puzzle dimensions may be smaller then original image depending on
-given puzzle piece size. Maximum possible rectangle is cropped from original image.*
+__NOTE__: Created puzzle image dimensions may be smaller then original image
+depending on the given puzzle piece size. Maximum possible rectangle is cropped
+from original image.
 
 # Solving puzzles
 
-In order to solve puzzles, use `gaps` script.
-
-i.e.
+In order to solve puzzles, use `gaps run`:
 
 ```bash
-gaps --image=puzzle.jpg --generations=20 --population=600
+gaps run puzzle.jpg solution.jpg --generations=20 --population=600
 ```
 
 This will start genetic algorithm with initial population of 600 and 20 generations.
@@ -74,34 +69,34 @@ Following options are provided:
 
 Option          | Description
 --------------- | -----------
-`--image`       | Path to puzzle
 `--size`        | Puzzle piece size in pixels
 `--generations` | Number of generations for genetic algorithm
 `--population`  | Number of individuals in population
-`--verbose`     | Show best solution after each generation
-`--save`        | Save puzzle solution as image
+`--debug`       | Show the best solution after each generation
 
-Run `gaps --help` for detailed help.
+Run `gaps run --help` for detailed help.
 
 ## Size detection
 
-If you don't explicitly provide `--size` argument to `gaps`, piece size will be detected automatically.
+If you don't explicitly provide `--size` argument to `gaps run`, piece size will
+be detected automatically.
 
-However, you can always provide `gaps` with `--size` argument explicitly:
+However, you can always provide `gaps run` with `--size` argument explicitly:
 
 ```bash
-gaps --image=puzzle.jpg --generations=20 --population=600 --size=48
+gaps run puzzle.jpg solution.jpg --generations=20 --population=600 --size=48
 ```
 
-__NOTE__ *Size detection feature works for the most images but there are some edge cases
+__NOTE__: Size detection feature works for the most images but there are some edge cases
 where size detection fails and detects incorrect piece size. In that case you can
-explicitly set piece size.*
+explicitly set piece size.
 
 ## Termination condition
 
-The termination condition of a Genetic Algorithm is important in determining when a GA run will end.
-It has been observed that initially, the GA progresses very fast with better solutions coming in every few iterations,
-but this tends to saturate in the later stages where the improvements are very small.
+The termination condition of a Genetic Algorithm is important in determining
+when a GA run will end.  It has been observed that initially, the GA progresses
+very fast with better solutions coming in every few iterations, but this tends
+to saturate in the later stages where the improvements are very small.
 
 `gaps` will terminate:
 

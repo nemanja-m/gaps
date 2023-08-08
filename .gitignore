@@ -7,9 +7,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Generated puzzle
-out.jpg
-*_solution.jpg
+# Images
+*.jpg
+!images/
 
 # C extensions
 *.so

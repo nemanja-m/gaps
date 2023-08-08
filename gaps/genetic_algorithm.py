@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from operator import attrgetter
 
-from gaps import image_helpers
+from gaps import utils
 from gaps.crossover import Crossover
 from gaps.image_analysis import ImageAnalysis
 from gaps.individual import Individual
@@ -19,9 +19,7 @@ class GeneticAlgorithm(object):
         self._piece_size = piece_size
         self._generations = generations
         self._elite_size = elite_size
-        pieces, rows, columns = image_helpers.flatten_image(
-            image, piece_size, indexed=True
-        )
+        pieces, rows, columns = utils.flatten_image(image, piece_size, indexed=True)
         self._population = [
             Individual(pieces, rows, columns) for _ in range(population_size)
         ]

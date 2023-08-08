@@ -1,6 +1,6 @@
 import numpy as np
 
-from gaps import image_helpers
+from gaps import utils
 from gaps.image_analysis import ImageAnalysis
 
 
@@ -83,7 +83,7 @@ class Individual(object):
     def to_image(self):
         """Converts individual to showable image"""
         pieces = [piece.image for piece in self.pieces]
-        return image_helpers.assemble_image(pieces, self.rows, self.columns)
+        return utils.assemble_image(pieces, self.rows, self.columns)
 
     def edge(self, piece_id, orientation):
         edge_index = self._piece_mapping[piece_id]
