@@ -145,13 +145,13 @@ def create(image: str, puzzle: str, size: int) -> None:
     """
 
     input_image = cv.imread(image)
-    pieces, rows, columns = utils.flatten_image(input_image, size)
+    pieces, rows, columns = utils.flatten_image(input_image, piece_size=size)
 
     # Randomize pieces in order to make puzzle
     np.random.shuffle(pieces)
 
     # Create puzzle by stacking pieces
-    output_image = utils.assemble_image(pieces, rows, columns)
+    output_image = utils.stitch_image(pieces, rows, columns)
 
     cv.imwrite(puzzle, output_image)
 
