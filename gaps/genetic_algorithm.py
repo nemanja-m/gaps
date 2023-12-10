@@ -3,7 +3,7 @@ from __future__ import print_function
 from operator import attrgetter
 
 from gaps import utils
-from gaps.crossover import Crossover
+from gaps.crossover import _CrossoverRunner
 from gaps.image_analysis import ImageAnalysis
 from gaps.individual import Individual
 from gaps.plot import Plot
@@ -53,9 +53,9 @@ class GeneticAlgorithm(object):
             )
 
             for first_parent, second_parent in selected_parents:
-                crossover = Crossover(first_parent, second_parent)
+                crossover = _CrossoverRunner(first_parent, second_parent)
                 crossover.run()
-                child = crossover.child()
+                child = crossover.result()
                 new_population.append(child)
 
             fittest = self._best_individual()

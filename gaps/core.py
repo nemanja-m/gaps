@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 
 from . import utils
 from .callback import Callback
-from .crossover import Crossover
+from .crossover import crossover
 from .evaluation import Evaluator
 from .exception import FitnessException
 
@@ -72,6 +72,14 @@ class Chromosome:
         self._fitness: Optional[float] = None
 
     @property
+    def genes(self) -> List[Gene]:
+        return self._genes
+
+    def get_gene(self, index: int) -> Gene:
+        """Return gene by its index."""
+        return self._genes[index]
+
+    @property
     def fitness(self) -> float:
         if self._fitness is None:
             raise FitnessException("Trying to return empty fitness value.")
@@ -93,6 +101,21 @@ class Chromosome:
         """Convert list of puzzle pieces to full puzzle image."""
         pieces = [gene.image for gene in self._genes]
         return utils.stitch_image(pieces, rows=self._rows, columns=self._columns)
+
+    def gene_edge_index(self, gene_index: int, orientation: str) -> int:
+        edge_index = self.get_gene(gene_index)
+
+        if (orientation == "T") and (edge_index >= self.columns):
+            return self.genes[edge_index - self.columns].index
+
+        if (orientation == "R") and (edge_index % self.columns < self.columns - 1):
+            return self.genes[edge_index + 1].index
+
+        if (orientation == "D") and (edge_index < (self.rows - 1) * self.columns):
+            return self.genes[edge_index + self.columns].index
+
+        if (orientation == "L") and (edge_index % self.columns > 0):
+            return self.genes[edge_index - 1].index
 
     def __getitem__(self, key: int) -> List[Gene]:
         return self._genes[key * self.columns : (key + 1) * self.columns]
@@ -214,11 +237,8 @@ class Evolution:
                 self._notify_early_stopping(generation, fittest)
                 return fittest
 
-            parents = population.select_parent_pairs()
-            for first_parent, second_parent in parents:
-                crossover = Crossover(first_parent, second_parent)
-                crossover.run()
-                child = crossover.child()
+            for first_parent, second_parent in population.select_parent_pairs():
+                child = crossover(first_parent, second_parent)
                 new_chromosomes.append(child)
 
             population = Population.from_chromosomes(new_chromosomes)
