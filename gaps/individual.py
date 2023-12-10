@@ -77,13 +77,13 @@ class Individual(object):
         return self.pieces[0].size
 
     def piece_by_id(self, identifier):
-        """ "Return specific piece from individual"""
+        """Return specific piece from individual."""
         return self.pieces[self._piece_mapping[identifier]]
 
     def to_image(self):
-        """Converts individual to showable image"""
+        """Converts individual to image."""
         pieces = [piece.image for piece in self.pieces]
-        return utils.assemble_image(pieces, self.rows, self.columns)
+        return utils.stitch_image(pieces, self.rows, self.columns)
 
     def edge(self, piece_id, orientation):
         edge_index = self._piece_mapping[piece_id]

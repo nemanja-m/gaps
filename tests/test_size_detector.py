@@ -5,7 +5,6 @@ import pytest
 from gaps import utils
 from gaps.size_detector import SizeDetector
 
-
 sizes = [32, 48, 56, 64]
 
 images = ["images/lena.jpg", "images/island.jpg", "images/pillars.jpg"]
@@ -15,7 +14,7 @@ def create_puzzle(image_path, piece_size):
     image = cv.imread(image_path)
     pieces, rows, columns = utils.flatten_image(image, piece_size)
     np.random.shuffle(pieces)
-    return utils.assemble_image(pieces, rows, columns)
+    return utils.stitch_image(pieces, rows, columns)
 
 
 @pytest.mark.parametrize("image", images)
