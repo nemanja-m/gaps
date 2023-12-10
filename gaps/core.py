@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bisect
 import random
 from dataclasses import dataclass
@@ -97,8 +99,12 @@ class Chromosome:
 
 
 class Population:
-    def __init__(self, chromosomes: List[Chromosome]) -> None:
+    def __init__(self, chromosomes: List[Chromosome], elite_size: int) -> None:
         self._chromosomes = chromosomes
+        self._elite_size = elite_size
+
+    def from_chromosomes(self, chromosomes: List[Chromosome]) -> Population:
+        return Population(chromosomes, self._elite_size)
 
     def set_fitness(self, fitness_scores: List[float]) -> None:
         """Set fitness score for each chromosome.
@@ -118,13 +124,10 @@ class Population:
         for score, chromosome in zip(fitness_scores, self._chromosomes):
             chromosome.fitness = score
 
-    def elites(self, elite_size: int) -> List[Chromosome]:
+    def elites(self) -> List[Chromosome]:
         """Return the best chromosomes based on the fitness values.
 
         Elite chromosomes are transferred directly in the next generation.
-
-        Args:
-            elite_size: Size of the elite population.
 
         Returns:
             A list of elite chromosomes.
@@ -133,11 +136,9 @@ class Population:
             self._chromosomes,
             key=lambda c: c.fitness,
             reverse=True,
-        )[:elite_size]
+        )[: self._elite_size]
 
-    def select_parent_pairs(
-        self, elite_size: int
-    ) -> List[Tuple[Chromosome, Chromosome]]:
+    def select_parent_pairs(self) -> List[Tuple[Chromosome, Chromosome]]:
         """Select parent pairs for crossover.
 
         Parent selection considers the number of elites and returns
@@ -153,7 +154,7 @@ class Population:
         intervals = [sum(fitness_values[: i + 1]) for i in range(len(fitness_values))]
         pairs = [
             (self._select_parent(intervals), self._select_parent(intervals))
-            for _ in range(len(self._chromosomes) - elite_size)
+            for _ in range(len(self._chromosomes) - self._elite_size)
         ]
         return pairs
 
@@ -179,14 +180,14 @@ class Evolution:
     def run(
         self,
         num_generations: int,
-        elite_size: int,
         termination_threshold: int = DEFAULT_TERMINATION_THRESHOLD,
     ) -> Optional[Chromosome]:
         """Evolve initial population and return the best chromosome.
 
         Args:
             num_generations: How many iterations does evolution run.
-            elite_size: Number of elite chromosomes passed to the next generation.
+            termination_threshold: How many generations without improvement
+                will trigger early stopping.
         """
         fittest = None
         population = self._initial_population
@@ -199,7 +200,7 @@ class Evolution:
             new_chromosomes: List[Chromosome] = []
 
             self._fitness_evaluator.evaluate(population)
-            elites = population.elites(elite_size)
+            elites = population.elites()
             new_chromosomes.extend(elites)
             fittest = elites[0]
             self._notify_evaluation_completed(generation, population, fittest)
@@ -213,14 +214,14 @@ class Evolution:
                 self._notify_early_stopping(generation, fittest)
                 return fittest
 
-            parents = population.select_parent_pairs(elite_size)
+            parents = population.select_parent_pairs()
             for first_parent, second_parent in parents:
                 crossover = Crossover(first_parent, second_parent)
                 crossover.run()
                 child = crossover.child()
                 new_chromosomes.append(child)
 
-            population = Population(new_chromosomes)
+            population = Population.from_chromosomes(new_chromosomes)
             self._notify_generation_completed(generation)
 
         self._notify_solution_found(generation, fittest)
