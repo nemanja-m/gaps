@@ -9,7 +9,7 @@ authors = [
     { name = "Nemanja Milicevic", email = "the.nemanja.milicevic@gmail.com" },
 ]
 dependencies = [
-    "pillow>=10.2.0,<11.0.0",
+    "pillow>=12.3.0,<13.0.0",
     "numpy>=2.0.0,<3.0.0",
     "opencv-python>=4.8.0.76,<5.0.0",
     "click>=8.1.6,<9.0.0",
