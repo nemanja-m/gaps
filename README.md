@@ -90,6 +90,16 @@ Option          | Description
 
 Run `uv run gaps run --help` for detailed help.
 
+## Grayscale images
+
+Grayscale PNG/JPEG images are supported as native single-channel images. The
+fitness function uses normalized robust edge and gradient costs, and the solver
+also applies improving swap mutations to avoid early convergence on ambiguous
+edges.
+
+A deterministic manual validation puzzle is available in
+`images/grayscale/README.md`.
+
 ## Size detection
 
 If you don't explicitly provide the `--size` argument to `uv run gaps run`,
