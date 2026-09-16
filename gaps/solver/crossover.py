@@ -3,13 +3,13 @@ from __future__ import annotations
 import heapq
 import random
 from dataclasses import dataclass, field
-from typing import TypeAlias, TypeGuard
+from typing import TypeGuard
 
 from gaps.domain import Arrangement, Direction, Piece
 from gaps.solver.analysis import EdgeCostTable
 
-Position: TypeAlias = tuple[int, int]
-RelativePiece: TypeAlias = tuple[int, Direction]
+type Position = tuple[int, int]
+type RelativePiece = tuple[int, Direction]
 
 
 @dataclass(order=True, slots=True)

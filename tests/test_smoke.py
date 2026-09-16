@@ -7,7 +7,6 @@ from gaps.imaging.io import read_image
 from gaps.imaging.transforms import assemble_image, flatten_image
 from gaps.solver.algorithm import GeneticAlgorithm
 
-
 GENERATIONS = 3
 POPULATION = 100
 PIECE_SIZE = 128

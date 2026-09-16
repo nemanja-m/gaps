@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, TypeAlias
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
-Image: TypeAlias = NDArray[np.uint8]
-CostLookup: TypeAlias = Callable[[tuple[int, int], "EdgeAxis"], float]
+type Image = NDArray[np.uint8]
+type CostLookup = Callable[[tuple[int, int], EdgeAxis], float]
 
 
 class Direction(StrEnum):
@@ -21,7 +21,7 @@ class Direction(StrEnum):
     LEFT = "left"
 
     @property
-    def opposite(self) -> "Direction":
+    def opposite(self) -> Direction:
         return {
             Direction.TOP: Direction.BOTTOM,
             Direction.RIGHT: Direction.LEFT,
@@ -109,7 +109,7 @@ class Arrangement:
         pieces: Sequence[Piece],
         layout: PuzzleLayout,
         rng,
-    ) -> "Arrangement":
+    ) -> Arrangement:
         shuffled_pieces = list(pieces)
         rng.shuffle(shuffled_pieces)
         return cls(shuffled_pieces, layout)

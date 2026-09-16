@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import random
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-import random
 
 from gaps.domain import Arrangement, Image
 from gaps.imaging.transforms import flatten_image
