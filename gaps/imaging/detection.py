@@ -20,8 +20,10 @@ class SizeDetector:
     MAX_SIZE_COEFFICIENT = 1.3
 
     def __init__(self, image: Image) -> None:
-        if image.ndim != 3:
-            raise ValueError("image must be a color image with three dimensions")
+        if image.ndim not in (2, 3) or (
+            image.ndim == 3 and image.shape[2] not in (1, 3)
+        ):
+            raise ValueError("image must be grayscale or three-channel color")
         self._image = image.copy()
         self._possible_sizes = self._calculate_possible_sizes()
 
@@ -46,7 +48,11 @@ class SizeDetector:
         return max(probabilities, key=lambda size: probabilities[size])
 
     def _split_channel_images(self) -> list[np.ndarray]:
-        blue, green, red = cv.split(self._image)
+        channels = cv.split(self._image)
+        if len(channels) == 1:
+            return [channels[0]]
+
+        blue, green, red = channels
         return [
             red,
             green,

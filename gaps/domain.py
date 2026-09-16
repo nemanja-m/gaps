@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -10,6 +11,8 @@ from numpy.typing import NDArray
 
 type Image = NDArray[np.uint8]
 type CostLookup = Callable[[tuple[int, int], EdgeAxis], float]
+
+_FITNESS_TEMPERATURE = 0.05
 
 
 class Direction(StrEnum):
@@ -63,8 +66,10 @@ class Piece:
 
     def __post_init__(self) -> None:
         image = np.asarray(self.image)
-        if image.ndim != 3:
-            raise ValueError("piece image must have three dimensions")
+        if image.ndim not in (2, 3):
+            raise ValueError("piece image must have two or three dimensions")
+        if image.ndim == 3 and image.shape[2] not in (1, 3):
+            raise ValueError("piece image must be grayscale or three-channel")
         if image.shape[0] != image.shape[1]:
             raise ValueError("piece image must be square")
         if image.dtype != np.uint8:
@@ -119,9 +124,10 @@ class Arrangement:
         return self.pieces[start : start + self.layout.columns]
 
     def score(self, cost_lookup: CostLookup) -> float:
-        """Calculate and cache the arrangement's compatibility score."""
+        """Calculate and cache a normalized arrangement compatibility score."""
         if self._cached_score is None:
-            total_cost = 1 / 1000
+            total_cost = 0.0
+            seam_count = 0
             for row in range(self.layout.rows):
                 for column in range(self.layout.columns - 1):
                     ids = (
@@ -129,6 +135,7 @@ class Arrangement:
                         self[row][column + 1].identifier,
                     )
                     total_cost += cost_lookup(ids, EdgeAxis.HORIZONTAL)
+                    seam_count += 1
             for row in range(self.layout.rows - 1):
                 for column in range(self.layout.columns):
                     ids = (
@@ -136,8 +143,23 @@ class Arrangement:
                         self[row + 1][column].identifier,
                     )
                     total_cost += cost_lookup(ids, EdgeAxis.VERTICAL)
-            self._cached_score = 1000 / total_cost
+                    seam_count += 1
+
+            mean_cost = total_cost / seam_count if seam_count else 0.0
+            self._cached_score = math.exp(-mean_cost / _FITNESS_TEMPERATURE)
         return self._cached_score
+
+    def swap(self, first_index: int, second_index: int) -> None:
+        """Swap two pieces and invalidate cached arrangement state."""
+        if first_index == second_index:
+            return
+        self.pieces[first_index], self.pieces[second_index] = (
+            self.pieces[second_index],
+            self.pieces[first_index],
+        )
+        self._piece_mapping[self.pieces[first_index].identifier] = first_index
+        self._piece_mapping[self.pieces[second_index].identifier] = second_index
+        self._cached_score = None
 
     def piece_by_id(self, identifier: int) -> Piece:
         return self.pieces[self._piece_mapping[identifier]]

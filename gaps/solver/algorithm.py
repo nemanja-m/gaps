@@ -35,6 +35,7 @@ class GeneticAlgorithm:
         generations: int,
         elite_size: int = 2,
         rng: random.Random | None = None,
+        mutation_rate: float = 0.05,
     ) -> None:
         if population_size <= 0:
             raise ValueError("population_size must be positive")
@@ -42,6 +43,8 @@ class GeneticAlgorithm:
             raise ValueError("generations must be positive")
         if not 0 < elite_size < population_size:
             raise ValueError("elite_size must be between zero and population size")
+        if not 0.0 <= mutation_rate <= 1.0:
+            raise ValueError("mutation_rate must be between zero and one")
 
         pieces, layout = flatten_image(image, piece_size, indexed=True)
         self._analysis = EdgeCostTable()
@@ -49,6 +52,7 @@ class GeneticAlgorithm:
         self._generations = generations
         self._elite_size = elite_size
         self._rng = rng or random.Random()
+        self._mutation_rate = mutation_rate
         self._population = [
             Arrangement.random(pieces, layout, self._rng)
             for _ in range(population_size)
@@ -77,7 +81,9 @@ class GeneticAlgorithm:
                     first_parent, second_parent, self._analysis, self._rng
                 )
                 crossover.run()
-                next_population.append(crossover.child())
+                child = crossover.child()
+                self._mutate(child)
+                next_population.append(child)
 
             self._population = next_population
             best_arrangement = self._best_arrangement()
@@ -108,6 +114,19 @@ class GeneticAlgorithm:
             best_score,
             False,
         )
+
+    def _mutate(self, arrangement: Arrangement) -> None:
+        """Try one improving random swap to preserve population diversity."""
+        if self._mutation_rate == 0.0 or self._rng.random() >= self._mutation_rate:
+            return
+        if len(arrangement.pieces) < 2:
+            return
+
+        first_index, second_index = self._rng.sample(range(len(arrangement.pieces)), 2)
+        original_score = self._score(arrangement)
+        arrangement.swap(first_index, second_index)
+        if self._score(arrangement) < original_score:
+            arrangement.swap(first_index, second_index)
 
     def _score(self, arrangement: Arrangement) -> float:
         return arrangement.score(self._analysis.cost)

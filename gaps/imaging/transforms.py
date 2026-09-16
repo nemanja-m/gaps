@@ -25,8 +25,8 @@ def flatten_image(
     """Split an image into square pieces, cropping incomplete edges."""
     if piece_size <= 0:
         raise ValueError("piece_size must be positive")
-    if image.ndim != 3:
-        raise ValueError("image must be a color image with three dimensions")
+    if image.ndim not in (2, 3) or (image.ndim == 3 and image.shape[2] not in (1, 3)):
+        raise ValueError("image must be grayscale or three-channel color")
 
     rows, columns = image.shape[0] // piece_size, image.shape[1] // piece_size
     if rows == 0 or columns == 0:
