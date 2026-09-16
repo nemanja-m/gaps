@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from contextlib import ExitStack
+from pathlib import Path
 
 import click
 
@@ -104,7 +105,16 @@ def run(
         click.echo(f"Piece size: {size}")
 
         with ExitStack() as display:
-            preview = display.enter_context(OpenCVPreview()) if debug else None
+            preview = (
+                display.enter_context(
+                    OpenCVPreview(
+                        title=f"gaps | {Path(puzzle).name}",
+                        total_generations=generations,
+                    )
+                )
+                if debug
+                else None
+            )
             progress = display.enter_context(TerminalProgress()) if debug else None
             if preview is not None:
                 preview.show(input_puzzle, generation=0)
