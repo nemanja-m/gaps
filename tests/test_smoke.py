@@ -1,3 +1,5 @@
+import random
+
 import cv2 as cv
 import numpy as np
 import pytest
@@ -14,7 +16,18 @@ image = cv.imread("images/baboon.jpg")
 
 
 @pytest.fixture
-def puzzle():
+def seeded_randomness():
+    random_state = random.getstate()
+    numpy_state = np.random.get_state()
+    random.seed(0)
+    np.random.seed(0)
+    yield
+    random.setstate(random_state)
+    np.random.set_state(numpy_state)
+
+
+@pytest.fixture
+def puzzle(seeded_randomness):
     pieces, rows, columns = utils.flatten_image(image, PIECE_SIZE)
     np.random.shuffle(pieces)
     return utils.assemble_image(pieces, rows, columns)

@@ -1,3 +1,6 @@
+import random
+from pathlib import Path
+
 import click
 import cv2 as cv
 import numpy as np
@@ -6,11 +9,10 @@ from gaps import utils
 from gaps.genetic_algorithm import GeneticAlgorithm
 from gaps.size_detector import SizeDetector
 
-DEFAULT_GENERATIONS: int = 20
-DEFAULT_POPULATION: int = 200
-
-MIN_PIECE_SIZE: int = 32
-MAX_PIECE_SIZE: int = 128
+DEFAULT_GENERATIONS = 20
+DEFAULT_POPULATION = 200
+MIN_PIECE_SIZE = 32
+MAX_PIECE_SIZE = 128
 
 
 @click.group(
@@ -24,20 +26,29 @@ def cli() -> None:
 
 
 def _validate_piece_size(_context: click.Context, _param: str, value: int) -> int:
-    if value < MIN_PIECE_SIZE:
-        raise click.BadParameter(f"Minimum piece size is {MIN_PIECE_SIZE} pixels")
-
-    if value > MAX_PIECE_SIZE:
-        raise click.BadParameter(f"Maximum piece size is {MAX_PIECE_SIZE} pixels")
-
+    if not MIN_PIECE_SIZE <= value <= MAX_PIECE_SIZE:
+        raise click.BadParameter(
+            f"Piece size must be between {MIN_PIECE_SIZE} and {MAX_PIECE_SIZE} pixels"
+        )
     return value
 
 
 def _validate_positive_integer(_context: click.Context, _param: str, value: int) -> int:
     if value <= 0:
         raise click.BadParameter("Should be a positive integer.")
-
     return value
+
+
+def _read_image(path: str) -> np.ndarray:
+    image = cv.imread(path)
+    if image is None:
+        raise click.ClickException(f"Could not read image: {path}")
+    return image
+
+
+def _write_image(path: str | Path, image: np.ndarray) -> None:
+    if not cv.imwrite(str(path), image):
+        raise click.ClickException(f"Could not write image: {path}")
 
 
 @click.command()
@@ -70,52 +81,34 @@ def _validate_positive_integer(_context: click.Context, _param: str, value: int)
 @click.option(
     "-d",
     "--debug",
-    type=bool,
     is_flag=True,
-    default=False,
     help="If enabled, shows the best individual after each generation.",
 )
 def run(
     puzzle: str,
     solution: str,
-    size: int,
+    size: int | None,
     generations: int,
     population: int,
     debug: bool,
 ) -> None:
-    """Run puzzle solver.
-
-    \b
-    PUZZLE is the input puzzle image with square pieces.
-    SOLUTION is the output image file for solved puzzle.
-
-    Examples:
-
-    $ gaps run puzzle.jpg solution.jpg --size=32 --generations=100 --population=1000
-
-    """
-
-    input_puzzle = cv.imread(puzzle)
-
+    """Solve PUZZLE and write the result to SOLUTION."""
+    input_puzzle = _read_image(puzzle)
     if size is None:
-        detector = SizeDetector(input_puzzle)
-        size = detector.detect()
+        size = SizeDetector(input_puzzle).detect()
 
     click.echo(f"Population: {population}")
     click.echo(f"Generations: {generations}")
     click.echo(f"Piece size: {size}")
 
-    ga = GeneticAlgorithm(
+    algorithm = GeneticAlgorithm(
         image=input_puzzle,
         piece_size=size,
         population_size=population,
         generations=generations,
     )
-    result = ga.start_evolution(debug)
-    output_image = result.to_image()
-
-    cv.imwrite(solution, output_image)
-
+    result = algorithm.start_evolution(verbose=debug)
+    _write_image(solution, result.to_image())
     click.echo("Puzzle solved")
 
 
@@ -132,29 +125,11 @@ def run(
     help="Size of single square puzzle piece in pixels.",
 )
 def create(image: str, puzzle: str, size: int) -> None:
-    """Create jigsaw puzzle with square pieces.
-
-    \b
-    IMAGE is the input image file to create puzzle.
-    PUZZLE is the output puzzle image with square pieces.
-
-    Examples:
-
-    $ gaps create image.jpg puzzle.jpg --size=32
-
-    """
-
-    input_image = cv.imread(image)
+    """Create a jigsaw puzzle from IMAGE and write it to PUZZLE."""
+    input_image = _read_image(image)
     pieces, rows, columns = utils.flatten_image(input_image, size)
-
-    # Randomize pieces in order to make puzzle
-    np.random.shuffle(pieces)
-
-    # Create puzzle by stacking pieces
-    output_image = utils.assemble_image(pieces, rows, columns)
-
-    cv.imwrite(puzzle, output_image)
-
+    random.shuffle(pieces)
+    _write_image(puzzle, utils.assemble_image(pieces, rows, columns))
     click.echo(f"\nCreated puzzle with {len(pieces)} pieces")
 
 
@@ -162,4 +137,4 @@ cli.add_command(run, name="run")
 cli.add_command(create, name="create")
 
 if __name__ == "__main__":
-    cli()  # pylint: disable=no-value-for-parameter
+    cli()
