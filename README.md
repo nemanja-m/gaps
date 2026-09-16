@@ -22,18 +22,34 @@ git clone https://github.com/nemanja-m/gaps.git
 cd gaps
 ```
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is not already available:
+
+```bash
+# macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows PowerShell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
 Install the project and development requirements with uv:
 
 ```bash
 uv sync
 ```
 
-# Creating puzzles from images
-
-To create puzzle from image use `gaps create`
+The `gaps` command is installed in the project environment. Run it with `uv run`:
 
 ```bash
-gaps create images/pillars.jpg puzzle.jpg --size=64
+uv run gaps --help
+```
+
+# Creating puzzles from images
+
+To create a puzzle from an image, use `uv run gaps create`:
+
+```bash
+uv run gaps create images/pillars.jpg puzzle.jpg --size=64
 ```
 
 will create puzzle with 240 pieces from `images/pillars.jpg` where each piece is
@@ -45,7 +61,7 @@ will create puzzle with 240 pieces from `images/pillars.jpg` where each piece is
   <img src="images/demo_puzzle.jpg" alt="puzzle" width="250" height="180" />
 </div>
 
-Run `gaps create --help` for detailed help.
+Run `uv run gaps create --help` for detailed help.
 
 __NOTE__: Created puzzle image dimensions may be smaller then original image
 depending on the given puzzle piece size. Pass `--seed` to `gaps create` or
@@ -54,10 +70,10 @@ from original image.
 
 # Solving puzzles
 
-In order to solve puzzles, use `gaps run`:
+To solve a puzzle, use `uv run gaps run`:
 
 ```bash
-gaps run puzzle.jpg solution.jpg --generations=20 --population=600
+uv run gaps run puzzle.jpg solution.jpg --generations=20 --population=600
 ```
 
 This will start genetic algorithm with initial population of 600 and 20 generations.
@@ -72,17 +88,18 @@ Option          | Description
 `--debug`       | Show the best solution after each generation
 `--seed`        | Use a reproducible random seed
 
-Run `gaps run --help` for detailed help.
+Run `uv run gaps run --help` for detailed help.
 
 ## Size detection
 
-If you don't explicitly provide `--size` argument to `gaps run`, piece size will
-be detected automatically.
+If you don't explicitly provide the `--size` argument to `uv run gaps run`,
+the piece size will be detected automatically.
 
-However, you can always provide `gaps run` with `--size` argument explicitly:
+However, you can always provide `uv run gaps run` with the `--size` argument
+explicitly:
 
 ```bash
-gaps run puzzle.jpg solution.jpg --generations=20 --population=600 --size=48
+uv run gaps run puzzle.jpg solution.jpg --generations=20 --population=600 --size=48
 ```
 
 __NOTE__: Size detection feature works for the most images but there are some edge cases
