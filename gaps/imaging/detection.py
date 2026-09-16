@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import bisect
 from collections.abc import Sequence
 
 import cv2 as cv
 import numpy as np
+
+from gaps.domain import Image
 
 
 class SizeDetector:
@@ -15,7 +19,7 @@ class SizeDetector:
     MIN_SIZE_COEFFICIENT = 0.9
     MAX_SIZE_COEFFICIENT = 1.3
 
-    def __init__(self, image: np.ndarray) -> None:
+    def __init__(self, image: Image) -> None:
         if image.ndim != 3:
             raise ValueError("image must be a color image with three dimensions")
         self._image = image.copy()
