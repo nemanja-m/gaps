@@ -13,6 +13,8 @@ auto-detection.
 
 # Installation
 
+Python 3.12.x is required.
+
 Clone repo:
 
 ```bash
