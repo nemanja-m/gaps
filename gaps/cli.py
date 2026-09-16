@@ -1,13 +1,16 @@
+from __future__ import annotations
+
+from contextlib import ExitStack
 import random
-from pathlib import Path
 
 import click
-import cv2 as cv
-import numpy as np
 
-from gaps import utils
-from gaps.genetic_algorithm import GeneticAlgorithm
-from gaps.size_detector import SizeDetector
+from gaps.domain import Arrangement
+from gaps.imaging.detection import SizeDetector
+from gaps.imaging.io import ImageIOError, read_image, write_image
+from gaps.imaging.transforms import assemble_image, flatten_image
+from gaps.display import OpenCVPreview, PreviewError, TerminalProgress
+from gaps.solver.algorithm import GeneticAlgorithm
 
 DEFAULT_GENERATIONS = 20
 DEFAULT_POPULATION = 200
@@ -39,16 +42,8 @@ def _validate_positive_integer(_context: click.Context, _param: str, value: int)
     return value
 
 
-def _read_image(path: str) -> np.ndarray:
-    image = cv.imread(path)
-    if image is None:
-        raise click.ClickException(f"Could not read image: {path}")
-    return image
-
-
-def _write_image(path: str | Path, image: np.ndarray) -> None:
-    if not cv.imwrite(str(path), image):
-        raise click.ClickException(f"Could not write image: {path}")
+def _report_error(error: Exception) -> click.ClickException:
+    return click.ClickException(str(error))
 
 
 @click.command()
@@ -79,6 +74,11 @@ def _write_image(path: str | Path, image: np.ndarray) -> None:
     help="The size of the initial population for genetic algorithm.",
 )
 @click.option(
+    "--seed",
+    type=int,
+    help="Seed for reproducible puzzle solving.",
+)
+@click.option(
     "-d",
     "--debug",
     is_flag=True,
@@ -90,25 +90,49 @@ def run(
     size: int | None,
     generations: int,
     population: int,
+    seed: int | None,
     debug: bool,
 ) -> None:
     """Solve PUZZLE and write the result to SOLUTION."""
-    input_puzzle = _read_image(puzzle)
-    if size is None:
-        size = SizeDetector(input_puzzle).detect()
+    try:
+        input_puzzle = read_image(puzzle)
+        if size is None:
+            size = SizeDetector(input_puzzle).detect()
 
-    click.echo(f"Population: {population}")
-    click.echo(f"Generations: {generations}")
-    click.echo(f"Piece size: {size}")
+        click.echo(f"Population: {population}")
+        click.echo(f"Generations: {generations}")
+        click.echo(f"Piece size: {size}")
 
-    algorithm = GeneticAlgorithm(
-        image=input_puzzle,
-        piece_size=size,
-        population_size=population,
-        generations=generations,
-    )
-    result = algorithm.start_evolution(verbose=debug)
-    _write_image(solution, result.to_image())
+        with ExitStack() as display:
+            preview = display.enter_context(OpenCVPreview()) if debug else None
+            progress = display.enter_context(TerminalProgress()) if debug else None
+            if preview is not None:
+                preview.show(input_puzzle, generation=0)
+
+            def on_generation(generation: int, arrangement: Arrangement) -> None:
+                if preview is not None:
+                    preview.show(
+                        assemble_image(arrangement.pieces, arrangement.layout),
+                        generation,
+                    )
+
+            result = GeneticAlgorithm(
+                image=input_puzzle,
+                piece_size=size,
+                population_size=population,
+                generations=generations,
+                rng=random.Random(seed),
+            ).solve(
+                progress=progress,
+                on_generation=on_generation if debug else None,
+            )
+            write_image(
+                solution,
+                assemble_image(result.arrangement.pieces, result.arrangement.layout),
+            )
+    except (ImageIOError, PreviewError, ValueError) as error:
+        raise _report_error(error) from error
+
     click.echo("Puzzle solved")
 
 
@@ -124,12 +148,21 @@ def run(
     callback=_validate_piece_size,
     help="Size of single square puzzle piece in pixels.",
 )
-def create(image: str, puzzle: str, size: int) -> None:
+@click.option(
+    "--seed",
+    type=int,
+    help="Seed for reproducible piece shuffling.",
+)
+def create(image: str, puzzle: str, size: int, seed: int | None) -> None:
     """Create a jigsaw puzzle from IMAGE and write it to PUZZLE."""
-    input_image = _read_image(image)
-    pieces, rows, columns = utils.flatten_image(input_image, size)
-    random.shuffle(pieces)
-    _write_image(puzzle, utils.assemble_image(pieces, rows, columns))
+    try:
+        input_image = read_image(image)
+        pieces, layout = flatten_image(input_image, size)
+        random.Random(seed).shuffle(pieces)
+        write_image(puzzle, assemble_image(pieces, layout))
+    except (ImageIOError, ValueError) as error:
+        raise _report_error(error) from error
+
     click.echo(f"\nCreated puzzle with {len(pieces)} pieces")
 
 

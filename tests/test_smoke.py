@@ -1,40 +1,36 @@
 import random
 
-import cv2 as cv
 import numpy as np
 import pytest
 
-from gaps import utils
-from gaps.genetic_algorithm import GeneticAlgorithm
+from gaps.imaging.io import read_image
+from gaps.imaging.transforms import assemble_image, flatten_image
+from gaps.solver.algorithm import GeneticAlgorithm
 
 
 GENERATIONS = 3
 POPULATION = 100
 PIECE_SIZE = 128
 
-image = cv.imread("images/baboon.jpg")
+image = read_image("images/baboon.jpg")
 
 
 @pytest.fixture
-def seeded_randomness():
-    random_state = random.getstate()
-    numpy_state = np.random.get_state()
-    random.seed(0)
-    np.random.seed(0)
-    yield
-    random.setstate(random_state)
-    np.random.set_state(numpy_state)
-
-
-@pytest.fixture
-def puzzle(seeded_randomness):
-    pieces, rows, columns = utils.flatten_image(image, PIECE_SIZE)
-    np.random.shuffle(pieces)
-    return utils.assemble_image(pieces, rows, columns)
+def puzzle():
+    pieces, layout = flatten_image(image, PIECE_SIZE)
+    random.Random(0).shuffle(pieces)
+    return assemble_image(pieces, layout)
 
 
 def test_puzzle_solver(puzzle):
-    algorithm = GeneticAlgorithm(puzzle, PIECE_SIZE, POPULATION, GENERATIONS)
-    solution = algorithm.start_evolution(verbose=False)
+    algorithm = GeneticAlgorithm(
+        puzzle,
+        PIECE_SIZE,
+        POPULATION,
+        GENERATIONS,
+        rng=random.Random(0),
+    )
+    result = algorithm.solve()
 
-    assert np.array_equal(image, solution.to_image())
+    solved_image = assemble_image(result.arrangement.pieces, result.arrangement.layout)
+    assert np.array_equal(image, solved_image)

@@ -54,7 +54,8 @@ will create puzzle with 240 pieces from `images/pillars.jpg` where each piece is
 Run `gaps create --help` for detailed help.
 
 __NOTE__: Created puzzle image dimensions may be smaller then original image
-depending on the given puzzle piece size. Maximum possible rectangle is cropped
+depending on the given puzzle piece size. Pass `--seed` to `gaps create` or
+`gaps run` when reproducible shuffling and solving are required. Maximum possible rectangle is cropped
 from original image.
 
 # Solving puzzles
@@ -75,6 +76,7 @@ Option          | Description
 `--generations` | Number of generations for genetic algorithm
 `--population`  | Number of individuals in population
 `--debug`       | Show the best solution after each generation
+`--seed`        | Use a reproducible random seed
 
 Run `gaps run --help` for detailed help.
 
