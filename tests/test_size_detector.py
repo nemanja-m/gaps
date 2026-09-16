@@ -2,10 +2,9 @@ import random
 
 import pytest
 
+from gaps.imaging.detection import SizeDetector
 from gaps.imaging.io import read_image
 from gaps.imaging.transforms import assemble_image, flatten_image
-from gaps.imaging.detection import SizeDetector
-
 
 sizes = [32, 48, 56, 64]
 images = ["images/lena.jpg", "images/island.jpg", "images/pillars.jpg"]

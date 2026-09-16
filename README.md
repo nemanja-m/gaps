@@ -22,16 +22,10 @@ git clone https://github.com/nemanja-m/gaps.git
 cd gaps
 ```
 
-Install requirements:
+Install the project and development requirements with uv:
 
 ```bash
-poetry install
-```
-
-Install project locally:
-
-```bash
-pip install .
+uv sync
 ```
 
 # Creating puzzles from images

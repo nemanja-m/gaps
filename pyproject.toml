@@ -25,26 +25,30 @@ gaps = "gaps.cli:cli"
 [dependency-groups]
 dev = [
     "pytest>=7.4.3,<8.0.0",
-    "ruff>=0.1.8,<1.0.0",
-    "black>=24.3.0,<25.0.0",
-    "mypy>=1.6.1,<2.0.0",
-    "pylint>=3.0.2,<4.0.0",
-    "pyright>=1.1.414,<2.0.0",
+    "pyrefly>=1.0.0,<2.0.0",
+    "ruff>=0.11.0,<1.0.0",
 ]
 
 [tool.pytest.ini_options]
 addopts = "-ra -v"
 
-[tool.black]
-target-version = ["py312"]
-
 [tool.ruff]
 target-version = "py312"
 
-[tool.mypy]
-python_version = "3.12"
-warn_unused_configs = true
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyrefly]
+project-includes = ["gaps", "tests"]
+python-version = "3.12"
 
 [build-system]
-requires = ["poetry-core>=2.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.15,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""

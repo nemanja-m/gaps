@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from contextlib import ExitStack
 import random
+from contextlib import ExitStack
 
 import click
 
+from gaps.display import OpenCVPreview, PreviewError, TerminalProgress
 from gaps.domain import Arrangement
 from gaps.imaging.detection import SizeDetector
 from gaps.imaging.io import ImageIOError, read_image, write_image
 from gaps.imaging.transforms import assemble_image, flatten_image
-from gaps.display import OpenCVPreview, PreviewError, TerminalProgress
 from gaps.solver.algorithm import GeneticAlgorithm
 
 DEFAULT_GENERATIONS = 20
