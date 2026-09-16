@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import cv2 as cv
@@ -18,8 +19,8 @@ def test_create_and_run_commands_round_trip(tmp_path):
     source_image = cv.imread(str(IMAGE))
     runner = CliRunner()
 
-    random_state = np.random.get_state()
-    np.random.seed(0)
+    random_state = random.getstate()
+    random.seed(0)
     try:
         create_result = runner.invoke(
             cli,
@@ -48,7 +49,7 @@ def test_create_and_run_commands_round_trip(tmp_path):
         assert "Puzzle solved" in run_result.output
         assert solution.is_file()
     finally:
-        np.random.set_state(random_state)
+        random.setstate(random_state)
 
     solved_image = cv.imread(str(solution))
     assert np.array_equal(source_image, solved_image)

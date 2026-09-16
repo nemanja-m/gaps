@@ -43,6 +43,7 @@ var/
 
 # virtualenv
 venv/
+.venv/
 ENV/
 
 # PyCharm project

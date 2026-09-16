@@ -1,38 +1,35 @@
-"""Selects fittest individuals from given population."""
+"""Selection strategies for the genetic algorithm."""
 
 import random
-import bisect
+from collections.abc import Sequence
+
+from gaps.individual import Individual
 
 
-def roulette_selection(population, elites=4):
-    """Roulette wheel selection.
+def roulette_selection(
+    population: Sequence[Individual], elites: int = 4
+) -> list[tuple[Individual, Individual]]:
+    """Select parent pairs with probability proportional to fitness."""
+    if not population:
+        raise ValueError("population must not be empty")
+    if not 0 <= elites < len(population):
+        raise ValueError("elites must be between zero and population size")
 
-    Each individual is selected to reproduce, with probability directly
-    proportional to its fitness score.
-
-    :params population: Collection of the individuals for selecting.
-    :params elite: Number of elite individuals passed to next generation.
-
-    Usage::
-
-        >>> from gaps.selection import roulette_selection
-        >>> selected_parents = roulette_selection(population, 10)
-
-    """
     fitness_values = [individual.fitness for individual in population]
-    probability_intervals = [
-        sum(fitness_values[: i + 1]) for i in range(len(fitness_values))
+    cumulative_fitness = []
+    total_fitness = 0.0
+    for fitness in fitness_values:
+        total_fitness += fitness
+        cumulative_fitness.append(total_fitness)
+
+    def select_individual() -> Individual:
+        random_value = random.random() * total_fitness
+        for index, upper_bound in enumerate(cumulative_fitness):
+            if random_value < upper_bound:
+                return population[index]
+        return population[-1]
+
+    return [
+        (select_individual(), select_individual())
+        for _ in range(len(population) - elites)
     ]
-
-    def select_individual():
-        """Selects random individual from population based on fitess value"""
-        random_select = random.uniform(0, probability_intervals[-1])
-        selected_index = bisect.bisect_left(probability_intervals, random_select)
-        return population[selected_index]
-
-    selected = []
-    for i in range(len(population) - elites):
-        first, second = select_individual(), select_individual()
-        selected.append((first, second))
-
-    return selected

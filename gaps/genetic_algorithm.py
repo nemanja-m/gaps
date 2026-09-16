@@ -1,93 +1,105 @@
-from __future__ import print_function
+from collections.abc import Sequence
 
-from operator import attrgetter
+import numpy as np
 
 from gaps import utils
 from gaps.crossover import Crossover
 from gaps.image_analysis import ImageAnalysis
 from gaps.individual import Individual
-from gaps.plot import Plot
 from gaps.progress_bar import print_progress
 from gaps.selection import roulette_selection
 
 
-class GeneticAlgorithm(object):
+class GeneticAlgorithm:
+    """Orchestrate population evolution for a single puzzle image."""
+
     TERMINATION_THRESHOLD = 10
 
-    def __init__(self, image, piece_size, population_size, generations, elite_size=2):
-        self._image = image
-        self._piece_size = piece_size
+    def __init__(
+        self,
+        image: np.ndarray,
+        piece_size: int,
+        population_size: int,
+        generations: int,
+        elite_size: int = 2,
+    ) -> None:
+        if population_size <= 0:
+            raise ValueError("population_size must be positive")
+        if generations <= 0:
+            raise ValueError("generations must be positive")
+        if not 0 < elite_size < population_size:
+            raise ValueError("elite_size must be between zero and population size")
+
+        pieces, rows, columns = utils.flatten_image(image, piece_size, indexed=True)
+        self._analysis = ImageAnalysis()
+        self._pieces = pieces
         self._generations = generations
         self._elite_size = elite_size
-        pieces, rows, columns = utils.flatten_image(image, piece_size, indexed=True)
         self._population = [
-            Individual(pieces, rows, columns) for _ in range(population_size)
+            Individual(pieces, rows, columns, self._analysis)
+            for _ in range(population_size)
         ]
-        self._pieces = pieces
 
-    def start_evolution(self, verbose):
-        print("=== Pieces:      {}\n".format(len(self._pieces)))
-
+    def start_evolution(self, verbose: bool = False) -> Individual:
+        """Run the configured number of generations and return the best result."""
+        print(f"=== Pieces:      {len(self._pieces)}\n")
+        plot = None
         if verbose:
-            plot = Plot(self._image)
+            from gaps.plot import Plot
 
-        ImageAnalysis.analyze_image(self._pieces)
+            plot = Plot(self._population[0].to_image())
 
-        fittest = None
-        best_fitness_score = float("-inf")
-        termination_counter = 0
+        self._analysis.analyze_image(self._pieces)
+        best_individual: Individual | None = None
+        best_fitness: float | None = None
+        stagnant_generations = 0
 
         for generation in range(self._generations):
             print_progress(
-                generation, self._generations - 1, prefix="=== Solving puzzle: "
+                generation,
+                self._generations - 1,
+                prefix="=== Solving puzzle: ",
             )
+            next_population = list(self._get_elite_individuals())
 
-            new_population = []
-
-            # Elitism
-            elite = self._get_elite_individuals(elites=self._elite_size)
-            new_population.extend(elite)
-
-            selected_parents = roulette_selection(
+            for first_parent, second_parent in roulette_selection(
                 self._population, elites=self._elite_size
-            )
-
-            for first_parent, second_parent in selected_parents:
-                crossover = Crossover(first_parent, second_parent)
+            ):
+                crossover = Crossover(first_parent, second_parent, self._analysis)
                 crossover.run()
-                child = crossover.child()
-                new_population.append(child)
+                next_population.append(crossover.child())
 
-            fittest = self._best_individual()
-
-            if fittest.fitness <= best_fitness_score:
-                termination_counter += 1
+            best_individual = self._best_individual()
+            if best_fitness is not None and best_individual.fitness <= best_fitness:
+                stagnant_generations += 1
             else:
-                best_fitness_score = fittest.fitness
+                best_fitness = best_individual.fitness
+                stagnant_generations = 0
 
-            if termination_counter == self.TERMINATION_THRESHOLD:
+            if stagnant_generations >= self.TERMINATION_THRESHOLD:
                 print("\n\n=== GA terminated")
                 print(
-                    "=== There was no improvement for {} generations".format(
-                        self.TERMINATION_THRESHOLD
-                    )
+                    "=== There was no improvement for "
+                    f"{self.TERMINATION_THRESHOLD} generations"
                 )
-                return fittest
+                return best_individual
 
-            self._population = new_population
-
-            if verbose:
+            self._population = next_population
+            if plot is not None:
                 plot.show_fittest(
-                    fittest.to_image(),
-                    "Generation: {} / {}".format(generation + 1, self._generations),
+                    best_individual.to_image(),
+                    f"Generation: {generation + 1} / {self._generations}",
                 )
 
-        return fittest
+        assert best_individual is not None
+        return best_individual
 
-    def _get_elite_individuals(self, elites):
-        """Returns first 'elite_count' fittest individuals from population"""
-        return sorted(self._population, key=attrgetter("fitness"))[-elites:]
+    def _get_elite_individuals(self) -> Sequence[Individual]:
+        """Return the fittest individuals preserved for the next generation."""
+        return sorted(self._population, key=lambda individual: individual.fitness)[
+            -self._elite_size :
+        ]
 
-    def _best_individual(self):
-        """Returns the fittest individual from population"""
-        return max(self._population, key=attrgetter("fitness"))
+    def _best_individual(self) -> Individual:
+        """Return the fittest individual in the current population."""
+        return max(self._population, key=lambda individual: individual.fitness)

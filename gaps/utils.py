@@ -1,69 +1,65 @@
+from typing import Literal, overload
+
 import numpy as np
 
 from gaps.piece import Piece
 
 
-def flatten_image(image, piece_size, indexed=False):
-    """Converts image into list of square pieces.
+@overload
+def flatten_image(
+    image: np.ndarray, piece_size: int, indexed: Literal[False] = False
+) -> tuple[list[np.ndarray], int, int]: ...
 
-    Input image is divided into square pieces of specified size and than
-    flattened into list. Each list element is PIECE_SIZE x PIECE_SIZE x 3
 
-    :params image:      Input image.
-    :params piece_size: Size of single square piece.
-    :params indexed: If True list of Pieces with IDs will be returned,
-        otherwise list of ndarray pieces
+@overload
+def flatten_image(
+    image: np.ndarray, piece_size: int, indexed: Literal[True]
+) -> tuple[list[Piece], int, int]: ...
 
-    Usage::
 
-        >>> from gaps.image_helpers import flatten_image
-        >>> flat_image = flatten_image(image, 32)
+def flatten_image(
+    image: np.ndarray, piece_size: int, indexed: bool = False
+) -> tuple[list[np.ndarray] | list[Piece], int, int]:
+    """Split an image into square pieces, cropping incomplete edges."""
+    if piece_size <= 0:
+        raise ValueError("piece_size must be positive")
+    if image.ndim != 3:
+        raise ValueError("image must be a color image with three dimensions")
 
-    """
     rows, columns = image.shape[0] // piece_size, image.shape[1] // piece_size
-    pieces = []
+    if rows == 0 or columns == 0:
+        raise ValueError("piece_size must fit within the image")
 
-    # Crop pieces from original image
-    for y in range(rows):
-        for x in range(columns):
-            left, top, w, h = (
-                x * piece_size,
-                y * piece_size,
-                (x + 1) * piece_size,
-                (y + 1) * piece_size,
-            )
-            piece = np.empty((piece_size, piece_size, image.shape[2]))
-            piece[:piece_size, :piece_size, :] = image[top:h, left:w, :]
-            pieces.append(piece)
+    pieces = [
+        image[
+            row * piece_size : (row + 1) * piece_size,
+            column * piece_size : (column + 1) * piece_size,
+        ].copy()
+        for row in range(rows)
+        for column in range(columns)
+    ]
 
     if indexed:
-        pieces = [Piece(value, index) for index, value in enumerate(pieces)]
+        return (
+            [Piece(image=piece, id=index) for index, piece in enumerate(pieces)],
+            rows,
+            columns,
+        )
 
     return pieces, rows, columns
 
 
-def assemble_image(pieces, rows, columns):
-    """Assembles image from pieces.
+def assemble_image(
+    pieces: list[np.ndarray] | list[Piece], rows: int, columns: int
+) -> np.ndarray:
+    """Assemble a sequence of pieces into an image."""
+    if rows <= 0 or columns <= 0:
+        raise ValueError("rows and columns must be positive")
+    if len(pieces) != rows * columns:
+        raise ValueError("piece count does not match the requested dimensions")
 
-    Given an array of pieces and desired image dimensions, function assembles
-    image by stacking pieces.
-
-    :params pieces:  Image pieces as an array.
-    :params rows:    Number of rows in resulting image.
-    :params columns: Number of columns in resulting image.
-
-    Usage::
-
-        >>> from gaps.image_helpers import assemble_image
-        >>> from gaps.image_helpers import flatten_image
-        >>> pieces, rows, cols = flatten_image(...)
-        >>> original_img = assemble_image(pieces, rows, cols)
-
-    """
-    vertical_stack = []
-    for i in range(rows):
-        horizontal_stack = []
-        for j in range(columns):
-            horizontal_stack.append(pieces[i * columns + j])
-        vertical_stack.append(np.hstack(horizontal_stack))
-    return np.vstack(vertical_stack).astype(np.uint8)
+    images = [piece.image if isinstance(piece, Piece) else piece for piece in pieces]
+    row_images = [
+        np.hstack(images[row * columns : (row + 1) * columns]) for row in range(rows)
+    ]
+    return np.vstack(row_images).astype(np.uint8, copy=False)

@@ -1,94 +1,91 @@
-from typing import List, Tuple, Dict
-from gaps.fitness import dissimilarity_measure
+from typing import Literal, Sequence
+
+from gaps.fitness import EdgeOrientation, dissimilarity_measure
+from gaps.piece import Piece
 from gaps.progress_bar import print_progress
 
+Orientation = Literal["T", "R", "D", "L"]
 
-class ImageAnalysis(object):
-    """Cache for dissimilarity measures of individuals
+_EDGE_ORIENTATIONS: tuple[EdgeOrientation, ...] = ("LR", "TD")
+_ORIENTATIONS: tuple[Orientation, ...] = ("T", "R", "D", "L")
+_EDGE_TO_ORIENTATIONS: dict[EdgeOrientation, tuple[Orientation, Orientation]] = {
+    "LR": ("L", "R"),
+    "TD": ("T", "D"),
+}
 
-    Class have static lookup table where keys are Piece's id's.  For each pair
-    puzzle pieces there is a map with values representing dissimilarity measure
-    between them. Each next generation have greater chance to use cached value
-    instead of calculating measure again.
 
-    Attributes:
-        dissimilarity_measures: Dictionary with cached dissimilarity measures for pieces
-        best_match_table: Dictionary with best matching piece for each edge and piece
+class ImageAnalysis:
+    """Cache edge comparisons and best matches for one puzzle image."""
 
-    """
+    def __init__(self) -> None:
+        self.dissimilarity_measures: dict[
+            tuple[int, int], dict[EdgeOrientation, float]
+        ] = {}
+        self.best_match_table: dict[int, dict[Orientation, list[tuple[int, float]]]] = (
+            {}
+        )
 
-    dissimilarity_measures: Dict[Tuple, Dict[str, float]] = {}
-    best_match_table: Dict[int, Dict[str, List[Tuple[int, float]]]] = {}
+    def analyze_image(self, pieces: Sequence[Piece]) -> None:
+        """Calculate and cache all pairwise edge comparisons."""
+        self.dissimilarity_measures.clear()
+        self.best_match_table.clear()
 
-    @classmethod
-    def analyze_image(cls, pieces):
         for piece in pieces:
-            # For each edge we keep best matches as a sorted list.
-            # Edges with lower dissimilarity_measure have higher priority.
-            cls.best_match_table[piece.id] = {"T": [], "R": [], "D": [], "L": []}
+            self.best_match_table[piece.id] = {
+                orientation: [] for orientation in _ORIENTATIONS
+            }
 
-        def update_best_match_table(first_piece, second_piece):
-            measure = dissimilarity_measure(first_piece, second_piece, orientation)
-            cls.put_dissimilarity(
-                (first_piece.id, second_piece.id), orientation, measure
-            )
-            cls.best_match_table[second_piece.id][orientation[0]].append(
-                (first_piece.id, measure)
-            )
-            cls.best_match_table[first_piece.id][orientation[1]].append(
-                (second_piece.id, measure)
-            )
-
-        # Calculate dissimilarity measures and best matches for each piece.
         iterations = len(pieces) - 1
-        for first in range(iterations):
-            print_progress(first, iterations - 1, prefix="=== Analyzing image:")
-            for second in range(first + 1, len(pieces)):
-                for orientation in ["LR", "TD"]:
-                    update_best_match_table(pieces[first], pieces[second])
-                    update_best_match_table(pieces[second], pieces[first])
+        if iterations <= 0:
+            return
 
-        for piece in pieces:
-            for orientation in ["T", "L", "R", "D"]:
-                cls.best_match_table[piece.id][orientation].sort(key=lambda x: x[1])
+        for first_index in range(iterations):
+            print_progress(first_index + 1, iterations, prefix="=== Analyzing image:")
+            first_piece = pieces[first_index]
+            for second_piece in pieces[first_index + 1 :]:
+                for orientation in _EDGE_ORIENTATIONS:
+                    self._update_best_match_table(
+                        first_piece, second_piece, orientation
+                    )
+                    self._update_best_match_table(
+                        second_piece, first_piece, orientation
+                    )
 
-    @classmethod
-    def put_dissimilarity(cls, ids, orientation, value):
-        """Puts a new value in lookup table for given pieces
+        for piece_matches in self.best_match_table.values():
+            for matches in piece_matches.values():
+                matches.sort(key=lambda match: match[1])
 
-        :params ids:         Identfiers of puzzle pieces
-        :params orientation: Orientation of puzzle pieces. Possible values are:
-                             'LR' => 'Left-Right'
-                             'TD' => 'Top-Down'
-        :params value:       Value of dissimilarity measure
+    def _update_best_match_table(
+        self,
+        first_piece: Piece,
+        second_piece: Piece,
+        orientation: EdgeOrientation,
+    ) -> None:
+        measure = dissimilarity_measure(first_piece, second_piece, orientation)
+        self.put_dissimilarity((first_piece.id, second_piece.id), orientation, measure)
+        first_orientation, second_orientation = _EDGE_TO_ORIENTATIONS[orientation]
+        self.best_match_table[second_piece.id][first_orientation].append(
+            (first_piece.id, measure)
+        )
+        self.best_match_table[first_piece.id][second_orientation].append(
+            (second_piece.id, measure)
+        )
 
-        Usage::
+    def put_dissimilarity(
+        self,
+        ids: tuple[int, int],
+        orientation: EdgeOrientation,
+        value: float,
+    ) -> None:
+        self.dissimilarity_measures.setdefault(ids, {})[orientation] = value
 
-            >>> from gaps.image_analysis import ImageAnalysis
-            >>> ImageAnalysis.put_dissimilarity([1, 2], "TD", 42)
-        """
-        if ids not in cls.dissimilarity_measures:
-            cls.dissimilarity_measures[ids] = {}
-        cls.dissimilarity_measures[ids][orientation] = value
+    def get_dissimilarity(
+        self, ids: tuple[int, int], orientation: EdgeOrientation
+    ) -> float:
+        return self.dissimilarity_measures[ids][orientation]
 
-    @classmethod
-    def get_dissimilarity(cls, ids, orientation):
-        """Returns previously cached dissimilarity measure for input pieces
-
-        :params ids:         Identfiers of puzzle pieces
-        :params orientation: Orientation of puzzle pieces. Possible values are:
-                             'LR' => 'Left-Right'
-                             'TD' => 'Top-Down'
-
-        Usage::
-
-            >>> from gaps.image_analysis import ImageAnalysis
-            >>> ImageAnalysis.get_dissimilarity([1, 2], "TD")
-
-        """
-        return cls.dissimilarity_measures[ids][orientation]
-
-    @classmethod
-    def best_match(cls, piece, orientation):
-        """ "Returns best match piece for given piece and orientation"""
-        return cls.best_match_table[piece][orientation][0][0]
+    def best_match(self, piece_id: int, orientation: Orientation) -> int:
+        matches = self.best_match_table[piece_id][orientation]
+        if not matches:
+            raise ValueError(f"No best match available for piece {piece_id}")
+        return matches[0][0]
