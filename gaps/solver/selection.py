@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from bisect import bisect_right
 from collections.abc import Callable, Sequence
 
 from gaps.domain import Arrangement
@@ -28,10 +29,8 @@ def roulette_selection(
 
     def select_individual() -> Arrangement:
         random_value = rng.random() * total_score
-        for index, upper_bound in enumerate(cumulative_scores):
-            if random_value < upper_bound:
-                return population[index]
-        return population[-1]
+        index = bisect_right(cumulative_scores, random_value)
+        return population[min(index, len(population) - 1)]
 
     return [
         (select_individual(), select_individual())

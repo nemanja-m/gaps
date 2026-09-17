@@ -47,6 +47,28 @@ def test_edge_cost_table_is_scoped_to_one_puzzle():
         EdgeCostTable().matches(0, Direction.RIGHT)
 
 
+def test_edge_cost_table_matches_scalar_fitness_for_both_axes():
+    rng = np.random.default_rng(31)
+    pieces = [
+        Piece(rng.integers(0, 256, (4, 4, 3), dtype=np.uint8), identifier)
+        for identifier in range(5)
+    ]
+    analysis = EdgeCostTable()
+    analysis.analyze(pieces)
+
+    for first_index, first_piece in enumerate(pieces):
+        for second_index, second_piece in enumerate(pieces):
+            if first_index == second_index:
+                continue
+            for axis in EdgeAxis:
+                assert analysis.cost(
+                    (first_piece.identifier, second_piece.identifier), axis
+                ) == pytest.approx(
+                    dissimilarity_measure(first_piece, second_piece, axis),
+                    abs=1e-6,
+                )
+
+
 def test_grayscale_fitness_prefers_continuous_edges():
     first = np.zeros((4, 4), dtype=np.uint8)
     first[:, -2] = [5, 15, 25, 35]

@@ -4,7 +4,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -95,7 +95,13 @@ class Arrangement:
     pieces: list[Piece]
     layout: PuzzleLayout
     _piece_mapping: dict[int, int] = field(init=False, repr=False)
+    _edge_cache: dict[Direction, dict[int, int | None]] | None = field(
+        default=None,
+        init=False,
+        repr=False,
+    )
     _cached_score: float | None = field(default=None, init=False, repr=False)
+    _cached_total_cost: float | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.pieces = list(self.pieces)
@@ -126,57 +132,148 @@ class Arrangement:
     def score(self, cost_lookup: CostLookup) -> float:
         """Calculate and cache a normalized arrangement compatibility score."""
         if self._cached_score is None:
-            total_cost = 0.0
-            seam_count = 0
-            for row in range(self.layout.rows):
-                for column in range(self.layout.columns - 1):
-                    ids = (
-                        self[row][column].identifier,
-                        self[row][column + 1].identifier,
-                    )
-                    total_cost += cost_lookup(ids, EdgeAxis.HORIZONTAL)
-                    seam_count += 1
-            for row in range(self.layout.rows - 1):
-                for column in range(self.layout.columns):
-                    ids = (
-                        self[row][column].identifier,
-                        self[row + 1][column].identifier,
-                    )
-                    total_cost += cost_lookup(ids, EdgeAxis.VERTICAL)
-                    seam_count += 1
+            arrangement_cost = getattr(cost_lookup, "arrangement_cost", None)
+            if callable(arrangement_cost):
+                score_lookup = cast(Callable[[Arrangement], float], arrangement_cost)
+                try:
+                    total_cost = score_lookup(self)
+                except (TypeError, ValueError) as error:
+                    raise ValueError("could not calculate arrangement score") from error
+            else:
+                total_cost = 0.0
+                for row in range(self.layout.rows):
+                    for column in range(self.layout.columns - 1):
+                        ids = (
+                            self[row][column].identifier,
+                            self[row][column + 1].identifier,
+                        )
+                        total_cost += cost_lookup(ids, EdgeAxis.HORIZONTAL)
+                for row in range(self.layout.rows - 1):
+                    for column in range(self.layout.columns):
+                        ids = (
+                            self[row][column].identifier,
+                            self[row + 1][column].identifier,
+                        )
+                        total_cost += cost_lookup(ids, EdgeAxis.VERTICAL)
 
-            mean_cost = total_cost / seam_count if seam_count else 0.0
-            self._cached_score = math.exp(-mean_cost / _FITNESS_TEMPERATURE)
+            self._cached_total_cost = total_cost
+            self._cached_score = self._score_from_total_cost(total_cost)
         return self._cached_score
 
-    def swap(self, first_index: int, second_index: int) -> None:
-        """Swap two pieces and invalidate cached arrangement state."""
+    def _score_from_total_cost(self, total_cost: float) -> float:
+        seam_count = (
+            self.layout.rows * (self.layout.columns - 1)
+            + (self.layout.rows - 1) * self.layout.columns
+        )
+        mean_cost = total_cost / seam_count if seam_count else 0.0
+        return math.exp(-mean_cost / _FITNESS_TEMPERATURE)
+
+    def _affected_seams(
+        self, first_index: int, second_index: int
+    ) -> set[tuple[EdgeAxis, int, int]]:
+        seams: set[tuple[EdgeAxis, int, int]] = set()
+        columns = self.layout.columns
+        for index in (first_index, second_index):
+            row, column = divmod(index, columns)
+            if column > 0:
+                seams.add((EdgeAxis.HORIZONTAL, row, column - 1))
+            if column < columns - 1:
+                seams.add((EdgeAxis.HORIZONTAL, row, column))
+            if row > 0:
+                seams.add((EdgeAxis.VERTICAL, row - 1, column))
+            if row < self.layout.rows - 1:
+                seams.add((EdgeAxis.VERTICAL, row, column))
+        return seams
+
+    def _seam_cost(
+        self,
+        seam: tuple[EdgeAxis, int, int],
+        cost_lookup: CostLookup,
+    ) -> float:
+        axis, row, column = seam
+        first_index = row * self.layout.columns + column
+        second_index = (
+            first_index + 1
+            if axis is EdgeAxis.HORIZONTAL
+            else first_index + self.layout.columns
+        )
+        ids = (
+            self.pieces[first_index].identifier,
+            self.pieces[second_index].identifier,
+        )
+        return cost_lookup(ids, axis)
+
+    def swap(
+        self,
+        first_index: int,
+        second_index: int,
+        cost_lookup: CostLookup | None = None,
+    ) -> None:
+        """Swap two pieces and update cached state when a cost lookup is given."""
         if first_index == second_index:
             return
+
+        cached_total_cost = self._cached_total_cost
+        affected_seams = (
+            self._affected_seams(first_index, second_index)
+            if cached_total_cost is not None and cost_lookup is not None
+            else set()
+        )
+        old_local_cost = (
+            sum(self._seam_cost(seam, cost_lookup) for seam in affected_seams)
+            if cost_lookup is not None
+            else 0.0
+        )
+
         self.pieces[first_index], self.pieces[second_index] = (
             self.pieces[second_index],
             self.pieces[first_index],
         )
         self._piece_mapping[self.pieces[first_index].identifier] = first_index
         self._piece_mapping[self.pieces[second_index].identifier] = second_index
-        self._cached_score = None
+        self._edge_cache = None
+
+        if cached_total_cost is not None and cost_lookup is not None:
+            new_local_cost = sum(
+                self._seam_cost(seam, cost_lookup) for seam in affected_seams
+            )
+            self._cached_total_cost = (
+                cached_total_cost - old_local_cost + new_local_cost
+            )
+            self._cached_score = self._score_from_total_cost(self._cached_total_cost)
+        else:
+            self._cached_score = None
+            self._cached_total_cost = None
 
     def piece_by_id(self, identifier: int) -> Piece:
         return self.pieces[self._piece_mapping[identifier]]
 
-    def edge(self, piece_id: int, direction: Direction) -> int | None:
-        piece_index = self._piece_mapping[piece_id]
+    def _build_edge_cache(self) -> None:
+        edges = {direction: {} for direction in Direction}
         columns = self.layout.columns
+        for piece_index, piece in enumerate(self.pieces):
+            row, column = divmod(piece_index, columns)
+            piece_id = piece.identifier
+            edges[Direction.TOP][piece_id] = (
+                self.pieces[piece_index - columns].identifier if row > 0 else None
+            )
+            edges[Direction.RIGHT][piece_id] = (
+                self.pieces[piece_index + 1].identifier
+                if column < columns - 1
+                else None
+            )
+            edges[Direction.BOTTOM][piece_id] = (
+                self.pieces[piece_index + columns].identifier
+                if row < self.layout.rows - 1
+                else None
+            )
+            edges[Direction.LEFT][piece_id] = (
+                self.pieces[piece_index - 1].identifier if column > 0 else None
+            )
+        self._edge_cache = edges
 
-        if direction is Direction.TOP and piece_index >= columns:
-            return self.pieces[piece_index - columns].identifier
-        if direction is Direction.RIGHT and piece_index % columns < columns - 1:
-            return self.pieces[piece_index + 1].identifier
-        if (
-            direction is Direction.BOTTOM
-            and piece_index < (self.layout.rows - 1) * columns
-        ):
-            return self.pieces[piece_index + columns].identifier
-        if direction is Direction.LEFT and piece_index % columns > 0:
-            return self.pieces[piece_index - 1].identifier
-        return None
+    def edge(self, piece_id: int, direction: Direction) -> int | None:
+        if self._edge_cache is None:
+            self._build_edge_cache()
+        assert self._edge_cache is not None
+        return self._edge_cache[direction][piece_id]
