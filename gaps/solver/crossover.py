@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import heapq
 import random
-from dataclasses import dataclass, field
 from typing import TypeGuard
 
 from gaps.domain import Arrangement, Direction, Piece
@@ -10,14 +9,7 @@ from gaps.solver.analysis import EdgeCostTable
 
 type Position = tuple[int, int]
 type RelativePiece = tuple[int, Direction]
-
-
-@dataclass(order=True, slots=True)
-class Candidate:
-    priority: float
-    position: Position
-    piece_id: int
-    relative_piece: RelativePiece = field(compare=False)
+type Candidate = tuple[float, int, int, int, int, int, Direction]
 
 
 SHARED_PIECE_PRIORITY = -10.0
@@ -46,6 +38,7 @@ class Crossover:
         self._kernel: dict[int, Position] = {}
         self._taken_positions: set[Position] = set()
         self._candidate_pieces: list[Candidate] = []
+        self._candidate_sequence = 0
 
     def child(self) -> Arrangement:
         """Return the child arrangement after :meth:`run` completes."""
@@ -66,17 +59,26 @@ class Crossover:
         """Populate the child kernel using parent and image matches."""
         self._initialize_kernel()
         while self._candidate_pieces:
-            candidate = heapq.heappop(self._candidate_pieces)
-            if candidate.position in self._taken_positions:
+            (
+                _priority,
+                row,
+                column,
+                piece_id,
+                _sequence,
+                relative_piece_id,
+                relative_direction,
+            ) = heapq.heappop(self._candidate_pieces)
+            position = (row, column)
+            if position in self._taken_positions:
                 continue
-            if candidate.piece_id in self._kernel:
+            if piece_id in self._kernel:
                 self.add_piece_candidate(
-                    candidate.relative_piece[0],
-                    candidate.relative_piece[1],
-                    candidate.position,
+                    relative_piece_id,
+                    relative_direction,
+                    position,
                 )
                 continue
-            self._put_piece_to_kernel(candidate.piece_id, candidate.position)
+            self._put_piece_to_kernel(piece_id, position)
 
     def _initialize_kernel(self) -> None:
         root_piece = self._rng.choice(self._parents[0].pieces)
@@ -146,9 +148,18 @@ class Crossover:
         position: Position,
         relative_piece: RelativePiece,
     ) -> None:
+        self._candidate_sequence += 1
         heapq.heappush(
             self._candidate_pieces,
-            Candidate(priority, position, piece_id, relative_piece),
+            (
+                priority,
+                position[0],
+                position[1],
+                piece_id,
+                self._candidate_sequence,
+                relative_piece[0],
+                relative_piece[1],
+            ),
         )
 
     def _available_boundaries(
@@ -158,19 +169,20 @@ class Crossover:
         if self._is_kernel_full():
             return []
 
-        positions = {
-            Direction.TOP: (row - 1, column),
-            Direction.RIGHT: (row, column + 1),
-            Direction.BOTTOM: (row + 1, column),
-            Direction.LEFT: (row, column - 1),
-        }
+        candidates = (
+            (Direction.TOP, (row - 1, column)),
+            (Direction.RIGHT, (row, column + 1)),
+            (Direction.BOTTOM, (row + 1, column)),
+            (Direction.LEFT, (row, column - 1)),
+        )
         boundaries = []
-        for direction, candidate_position in positions.items():
-            if candidate_position not in self._taken_positions and self._is_in_range(
-                candidate_position
-            ):
-                self._update_kernel_boundaries(candidate_position)
-                boundaries.append((direction, candidate_position))
+        for direction, candidate_position in candidates:
+            if candidate_position in self._taken_positions:
+                continue
+            if not self._is_in_range(candidate_position):
+                continue
+            self._update_kernel_boundaries(candidate_position)
+            boundaries.append((direction, candidate_position))
         return boundaries
 
     def _is_kernel_full(self) -> bool:
@@ -181,14 +193,13 @@ class Crossover:
         return self._is_row_in_range(row) and self._is_column_in_range(column)
 
     def _is_row_in_range(self, row: int) -> bool:
-        current_rows = abs(min(self._min_row, row)) + abs(max(self._max_row, row))
-        return current_rows < self._layout.rows
+        return max(self._max_row, row) - min(self._min_row, row) < self._layout.rows
 
     def _is_column_in_range(self, column: int) -> bool:
-        current_columns = abs(min(self._min_column, column)) + abs(
-            max(self._max_column, column)
+        return (
+            max(self._max_column, column) - min(self._min_column, column)
+            < self._layout.columns
         )
-        return current_columns < self._layout.columns
 
     def _update_kernel_boundaries(self, position: Position) -> None:
         row, column = position

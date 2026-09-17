@@ -124,12 +124,16 @@ class GeneticAlgorithm:
 
         first_index, second_index = self._rng.sample(range(len(arrangement.pieces)), 2)
         original_score = self._score(arrangement)
-        arrangement.swap(first_index, second_index)
+        arrangement.swap(first_index, second_index, cost_lookup=self._analysis)
         if self._score(arrangement) < original_score:
-            arrangement.swap(first_index, second_index)
+            arrangement.swap(
+                first_index,
+                second_index,
+                cost_lookup=self._analysis,
+            )
 
     def _score(self, arrangement: Arrangement) -> float:
-        return arrangement.score(self._analysis.cost)
+        return arrangement.score(self._analysis)
 
     def _elite_individuals(self) -> Sequence[Arrangement]:
         return sorted(self._population, key=self._score)[-self._elite_size :]
