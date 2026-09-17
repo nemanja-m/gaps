@@ -25,12 +25,15 @@ class Direction(StrEnum):
 
     @property
     def opposite(self) -> Direction:
-        return {
-            Direction.TOP: Direction.BOTTOM,
-            Direction.RIGHT: Direction.LEFT,
-            Direction.BOTTOM: Direction.TOP,
-            Direction.LEFT: Direction.RIGHT,
-        }[self]
+        return _OPPOSITE_DIRECTIONS[self]
+
+
+_OPPOSITE_DIRECTIONS = {
+    Direction.TOP: Direction.BOTTOM,
+    Direction.RIGHT: Direction.LEFT,
+    Direction.BOTTOM: Direction.TOP,
+    Direction.LEFT: Direction.RIGHT,
+}
 
 
 class EdgeAxis(StrEnum):
@@ -249,6 +252,8 @@ class Arrangement:
         return self.pieces[self._piece_mapping[identifier]]
 
     def _build_edge_cache(self) -> None:
+        if self._edge_cache is not None:
+            return
         edges = {direction: {} for direction in Direction}
         columns = self.layout.columns
         for piece_index, piece in enumerate(self.pieces):
