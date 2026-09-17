@@ -77,6 +77,16 @@ uv run gaps run puzzle.jpg solution.jpg --generations=20 --population=600
 ```
 
 This will start genetic algorithm with initial population of 600 and 20 generations.
+For CPU-bound child generation, use multiple worker processes:
+
+```bash
+uv run gaps run puzzle.jpg solution.jpg --generations=20 --population=600 --workers=4
+```
+
+Worker mode uses deterministic per-child seeds, so runs with the same input,
+seed, and worker count are reproducible. The serial mode (`--workers=1`) remains
+the reference backend, and parallel runs may produce a different valid genetic
+search trajectory.
 
 Following options are provided:
 
@@ -87,6 +97,7 @@ Option          | Description
 `--population`  | Number of individuals in population
 `--debug`       | Show the best solution after each generation
 `--seed`        | Use a reproducible random seed
+`--workers`     | Number of processes used to build children
 
 Run `uv run gaps run --help` for detailed help.
 

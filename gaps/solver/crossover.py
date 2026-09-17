@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import heapq
 import random
+from dataclasses import dataclass
 from typing import TypeGuard
 
 from gaps.domain import Arrangement, Direction, Piece
@@ -16,6 +17,21 @@ SHARED_PIECE_PRIORITY = -10.0
 BUDDY_PIECE_PRIORITY = -1.0
 
 
+@dataclass(slots=True)
+class CrossoverStats:
+    candidate_pushes: int = 0
+    candidate_pops: int = 0
+    discarded_taken_positions: int = 0
+    reexpanded_placed_pieces: int = 0
+    placed_pieces: int = 0
+    shared_matches: int = 0
+    buddy_matches: int = 0
+    best_match_candidates: int = 0
+    best_match_calls: int = 0
+    best_match_scanned: int = 0
+    validity_checks: int = 0
+
+
 class Crossover:
     """Build a child arrangement from two parent arrangements."""
 
@@ -25,10 +41,12 @@ class Crossover:
         second_parent: Arrangement,
         analysis: EdgeCostTable,
         rng: random.Random,
+        stats: CrossoverStats | None = None,
     ) -> None:
         self._parents = (first_parent, second_parent)
         self._analysis = analysis
         self._rng = rng
+        self._stats = stats
         self._pieces_length = len(first_parent.pieces)
         self._layout = first_parent.layout
         self._min_row = 0
@@ -78,9 +96,15 @@ class Crossover:
                 relative_direction,
             ) = heapq.heappop(self._candidate_pieces)
             position = (row, column)
+            if self._stats is not None:
+                self._stats.candidate_pops += 1
             if position in self._taken_positions:
+                if self._stats is not None:
+                    self._stats.discarded_taken_positions += 1
                 continue
             if piece_id in self._kernel:
+                if self._stats is not None:
+                    self._stats.reexpanded_placed_pieces += 1
                 self.add_piece_candidate(
                     relative_piece_id,
                     relative_direction,
@@ -94,6 +118,8 @@ class Crossover:
         self._put_piece_to_kernel(root_piece.identifier, (0, 0))
 
     def _put_piece_to_kernel(self, piece_id: int, position: Position) -> None:
+        if self._stats is not None:
+            self._stats.placed_pieces += 1
         self._kernel[piece_id] = position
         self._taken_positions.add(position)
         for direction, candidate_position in self._available_boundaries(position):
@@ -104,6 +130,8 @@ class Crossover:
     ) -> None:
         shared_piece = self._get_shared_piece(piece_id, direction)
         if self._is_valid_piece(shared_piece):
+            if self._stats is not None:
+                self._stats.shared_matches += 1
             self._push_candidate(
                 SHARED_PIECE_PRIORITY, shared_piece, position, (piece_id, direction)
             )
@@ -111,12 +139,16 @@ class Crossover:
 
         buddy_piece = self._get_buddy_piece(piece_id, direction)
         if self._is_valid_piece(buddy_piece):
+            if self._stats is not None:
+                self._stats.buddy_matches += 1
             self._push_candidate(
                 BUDDY_PIECE_PRIORITY, buddy_piece, position, (piece_id, direction)
             )
             return
 
         best_piece, priority = self._get_best_match_piece(piece_id, direction)
+        if self._stats is not None:
+            self._stats.best_match_candidates += 1
         if self._is_valid_piece(best_piece) and priority is not None:
             self._push_candidate(priority, best_piece, position, (piece_id, direction))
 
@@ -147,11 +179,15 @@ class Crossover:
         self, piece_id: int, direction: Direction
     ) -> tuple[int | None, float | None]:
         matches = self._analysis.matches(piece_id, direction)
+        if self._stats is not None:
+            self._stats.best_match_calls += 1
         key = (piece_id, direction)
         cursor = self._match_cursors.get(key, 0)
         match_count = len(matches)
         while cursor < match_count:
             candidate_piece, cost = matches[cursor]
+            if self._stats is not None:
+                self._stats.best_match_scanned += 1
             if self._is_valid_piece(candidate_piece):
                 self._match_cursors[key] = cursor
                 return candidate_piece, cost
@@ -167,6 +203,8 @@ class Crossover:
         relative_piece: RelativePiece,
     ) -> None:
         self._candidate_sequence += 1
+        if self._stats is not None:
+            self._stats.candidate_pushes += 1
         heapq.heappush(
             self._candidate_pieces,
             (
@@ -236,4 +274,6 @@ class Crossover:
             self._max_column = column
 
     def _is_valid_piece(self, piece_id: int | None) -> TypeGuard[int]:
+        if self._stats is not None:
+            self._stats.validity_checks += 1
         return piece_id is not None and piece_id not in self._kernel

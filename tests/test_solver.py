@@ -24,6 +24,54 @@ def test_solver_returns_result_and_reports_progress():
     assert any(phase == "evolution" for phase, _, _ in events)
 
 
+def test_solver_collects_optional_crossover_stats():
+    image = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)
+    solver = GeneticAlgorithm(
+        image,
+        piece_size=2,
+        population_size=8,
+        generations=2,
+        rng=random.Random(11),
+        collect_stats=True,
+    )
+
+    solver.solve()
+
+    assert solver.crossover_stats is not None
+    assert solver.crossover_stats.placed_pieces == (8 - 2) * 2 * 16
+    assert solver.crossover_stats.candidate_pushes > 0
+    assert (
+        solver.crossover_stats.candidate_pops == solver.crossover_stats.candidate_pushes
+    )
+    assert solver.crossover_stats.best_match_scanned > 0
+
+
+def test_solver_can_generate_children_in_worker_processes():
+    image = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)
+
+    first = GeneticAlgorithm(
+        image,
+        piece_size=2,
+        population_size=8,
+        generations=2,
+        rng=random.Random(11),
+        workers=2,
+    ).solve()
+    second = GeneticAlgorithm(
+        image,
+        piece_size=2,
+        population_size=8,
+        generations=2,
+        rng=random.Random(11),
+        workers=2,
+    ).solve()
+
+    first_ids = tuple(piece.identifier for piece in first.arrangement.pieces)
+    second_ids = tuple(piece.identifier for piece in second.arrangement.pieces)
+    assert first_ids == second_ids
+    assert sorted(first_ids) == list(range(16))
+
+
 def test_solver_reconstructs_a_grayscale_puzzle():
     base = np.array(
         [
