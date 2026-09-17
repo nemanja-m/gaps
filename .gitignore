@@ -1,6 +1,9 @@
 # vscode settings
 .vscode/
 
+# pytest-benchmark results
+.benchmarks/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .cache/
