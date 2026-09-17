@@ -18,11 +18,19 @@ _PIECE_SIZE = 32
 _PIECE_COUNT = 930
 _POPULATION_SIZE = 16
 _GENERATIONS = 1
+_GENERATION_PIECE_SIZE = 64
+_GENERATION_PIECE_COUNT = 225
+_GENERATION_POPULATION_SIZE = 600
+_GENERATION_COUNT = 5
 _SEED = 1
 _BENCHMARK_ROUNDS = 5
 _EXPECTED_SCORE = 0.417199844455363
 _EXPECTED_ARRANGEMENT_DIGEST = (
     "aa916936b45a31f0b012db0a1a38b2a9d8bafa3fab077885abcfa70aa72aad60"
+)
+_GENERATION_EXPECTED_SCORE = 0.4720038672779986
+_GENERATION_EXPECTED_ARRANGEMENT_DIGEST = (
+    "a29fdbe8e7a9d4f90b9d3c0760c582a2be68a9691899f78dd93489a0702576e6"
 )
 
 
@@ -58,6 +66,16 @@ def _solve(image):
     ).solve()
 
 
+def _solve_generation_heavy(image):
+    return GeneticAlgorithm(
+        image=image,
+        piece_size=_GENERATION_PIECE_SIZE,
+        population_size=_GENERATION_POPULATION_SIZE,
+        generations=_GENERATION_COUNT,
+        rng=random.Random(_SEED),
+    ).solve()
+
+
 def _arrangement_digest(result) -> str:
     identifiers = np.asarray(
         [piece.identifier for piece in result.arrangement.pieces],
@@ -78,6 +96,24 @@ def test_demo_puzzle_edge_analysis_baseline(benchmark, indexed_pieces):
     )
 
     assert analysis.cost((0, 1), EdgeAxis.HORIZONTAL) >= 0.0
+
+
+@pytest.mark.benchmark
+def test_demo_puzzle_generation_heavy_baseline(benchmark, demo_puzzle):
+    """Benchmark repeated crossover and scoring work."""
+    result = benchmark.pedantic(
+        _solve_generation_heavy,
+        args=(demo_puzzle,),
+        rounds=_BENCHMARK_ROUNDS,
+        warmup_rounds=0,
+        iterations=1,
+    )
+
+    identifiers = [piece.identifier for piece in result.arrangement.pieces]
+    assert sorted(identifiers) == list(range(_GENERATION_PIECE_COUNT))
+    assert result.generations_completed == _GENERATION_COUNT
+    assert result.best_score == pytest.approx(_GENERATION_EXPECTED_SCORE, abs=1e-10)
+    assert _arrangement_digest(result) == _GENERATION_EXPECTED_ARRANGEMENT_DIGEST
 
 
 @pytest.mark.benchmark

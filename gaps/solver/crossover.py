@@ -35,10 +35,19 @@ class Crossover:
         self._max_row = 0
         self._min_column = 0
         self._max_column = 0
+        first_parent._build_edge_cache()
+        second_parent._build_edge_cache()
+        first_edges = first_parent._edge_cache
+        second_edges = second_parent._edge_cache
+        if first_edges is None or second_edges is None:
+            raise RuntimeError("parent edge caches were not initialized")
+
+        self._parent_edges = (first_edges, second_edges)
         self._kernel: dict[int, Position] = {}
         self._taken_positions: set[Position] = set()
         self._candidate_pieces: list[Candidate] = []
         self._candidate_sequence = 0
+        self._match_cursors: dict[tuple[int, Direction], int] = {}
 
     def child(self) -> Arrangement:
         """Return the child arrangement after :meth:`run` completes."""
@@ -112,8 +121,8 @@ class Crossover:
             self._push_candidate(priority, best_piece, position, (piece_id, direction))
 
     def _get_shared_piece(self, piece_id: int, direction: Direction) -> int | None:
-        first_edge = self._parents[0].edge(piece_id, direction)
-        second_edge = self._parents[1].edge(piece_id, direction)
+        first_edge = self._parent_edges[0][direction][piece_id]
+        second_edge = self._parent_edges[1][direction][piece_id]
         if first_edge is not None and first_edge == second_edge:
             return first_edge
         return None
@@ -127,8 +136,9 @@ class Crossover:
 
         if second_buddy != piece_id:
             return None
-        if any(
-            parent.edge(piece_id, direction) == first_buddy for parent in self._parents
+        if (
+            self._parent_edges[0][direction][piece_id] == first_buddy
+            or self._parent_edges[1][direction][piece_id] == first_buddy
         ):
             return first_buddy
         return None
@@ -136,9 +146,17 @@ class Crossover:
     def _get_best_match_piece(
         self, piece_id: int, direction: Direction
     ) -> tuple[int | None, float | None]:
-        for candidate_piece, cost in self._analysis.matches(piece_id, direction):
+        matches = self._analysis.matches(piece_id, direction)
+        key = (piece_id, direction)
+        cursor = self._match_cursors.get(key, 0)
+        match_count = len(matches)
+        while cursor < match_count:
+            candidate_piece, cost = matches[cursor]
             if self._is_valid_piece(candidate_piece):
+                self._match_cursors[key] = cursor
                 return candidate_piece, cost
+            cursor += 1
+        self._match_cursors[key] = cursor
         return None, None
 
     def _push_candidate(
@@ -193,20 +211,29 @@ class Crossover:
         return self._is_row_in_range(row) and self._is_column_in_range(column)
 
     def _is_row_in_range(self, row: int) -> bool:
-        return max(self._max_row, row) - min(self._min_row, row) < self._layout.rows
+        if row < self._min_row:
+            return self._max_row - row < self._layout.rows
+        if row > self._max_row:
+            return row - self._min_row < self._layout.rows
+        return True
 
     def _is_column_in_range(self, column: int) -> bool:
-        return (
-            max(self._max_column, column) - min(self._min_column, column)
-            < self._layout.columns
-        )
+        if column < self._min_column:
+            return self._max_column - column < self._layout.columns
+        if column > self._max_column:
+            return column - self._min_column < self._layout.columns
+        return True
 
     def _update_kernel_boundaries(self, position: Position) -> None:
         row, column = position
-        self._min_row = min(self._min_row, row)
-        self._max_row = max(self._max_row, row)
-        self._min_column = min(self._min_column, column)
-        self._max_column = max(self._max_column, column)
+        if row < self._min_row:
+            self._min_row = row
+        elif row > self._max_row:
+            self._max_row = row
+        if column < self._min_column:
+            self._min_column = column
+        elif column > self._max_column:
+            self._max_column = column
 
     def _is_valid_piece(self, piece_id: int | None) -> TypeGuard[int]:
         return piece_id is not None and piece_id not in self._kernel
