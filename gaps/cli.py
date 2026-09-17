@@ -80,6 +80,14 @@ def _report_error(error: Exception) -> click.ClickException:
     help="Seed for reproducible puzzle solving.",
 )
 @click.option(
+    "--workers",
+    type=int,
+    show_default=True,
+    default=1,
+    callback=_validate_positive_integer,
+    help="Number of processes used to build children.",
+)
+@click.option(
     "-d",
     "--debug",
     is_flag=True,
@@ -92,6 +100,7 @@ def run(
     generations: int,
     population: int,
     seed: int | None,
+    workers: int,
     debug: bool,
 ) -> None:
     """Solve PUZZLE and write the result to SOLUTION."""
@@ -103,6 +112,7 @@ def run(
         click.echo(f"Population: {population}")
         click.echo(f"Generations: {generations}")
         click.echo(f"Piece size: {size}")
+        click.echo(f"Workers: {workers}")
 
         with ExitStack() as display:
             preview = (
@@ -132,6 +142,7 @@ def run(
                 population_size=population,
                 generations=generations,
                 rng=random.Random(seed),
+                workers=workers,
             ).solve(
                 progress=progress,
                 on_generation=on_generation if debug else None,
