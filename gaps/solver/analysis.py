@@ -155,3 +155,20 @@ class EdgeCostTable:
 
     def matches(self, piece_id: int, direction: Direction) -> list[tuple[int, float]]:
         return self._best_matches[piece_id][direction]
+
+    def best_cost(self, piece_id: int, direction: Direction) -> float:
+        """Return the lowest available directed edge cost for a piece side."""
+        matches = self.matches(piece_id, direction)
+        if not matches:
+            raise ValueError(f"no matches available for piece {piece_id}")
+        return matches[0][1]
+
+    def confidence(self, piece_id: int, direction: Direction) -> float:
+        """Return a normalized margin between the best two edge matches."""
+        matches = self.matches(piece_id, direction)
+        if len(matches) < 2:
+            return 1.0 if matches else 0.0
+        best_cost = matches[0][1]
+        second_cost = matches[1][1]
+        margin = max(0.0, second_cost - best_cost)
+        return min(1.0, margin / max(abs(second_cost), 1e-6))

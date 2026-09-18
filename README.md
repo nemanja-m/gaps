@@ -101,6 +101,24 @@ Option          | Description
 
 Run `uv run gaps run --help` for detailed help.
 
+## Solver approach
+
+The solver assumes a known rectangular layout and fixed piece orientation. It:
+
+1. extracts directed horizontal and vertical edge costs using robust pixel and
+   gradient comparisons;
+2. mixes confidence-aware beam-searched arrangements with random arrangements
+   to initialize the population;
+3. evolves valid permutations with tournament selection and crossover that
+   preserves strong parent edges and high-confidence blocks;
+4. applies adaptive mutation, local search over swaps/relocations/block moves,
+   elitism, and stagnation-triggered restarts; and
+5. returns the best valid arrangement found, with optional process workers for
+   child generation.
+
+This combination uses image-derived compatibility to build useful regions while
+retaining genetic diversity for ambiguous edges and repetitive textures.
+
 ## Grayscale images
 
 Grayscale PNG/JPEG images are supported as native single-channel images. The

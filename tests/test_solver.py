@@ -5,7 +5,7 @@ import pytest
 
 from gaps.domain import PuzzleLayout
 from gaps.imaging.transforms import assemble_image, flatten_image
-from gaps.solver.algorithm import GeneticAlgorithm
+from gaps.solver.algorithm import GeneticAlgorithm, build_seed_arrangements
 from gaps.solver.analysis import EdgeCostTable
 
 
@@ -48,6 +48,37 @@ def test_phase_one_search_keeps_global_best_valid_after_restart():
 
     assert result.best_score == pytest.approx(result.arrangement.score(analysis))
     assert sorted(identifiers) == list(range(16))
+
+
+def test_phase_two_seeds_are_valid_and_reproducible():
+    image = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)
+    pieces, layout = flatten_image(image, piece_size=2, indexed=True)
+    analysis = EdgeCostTable()
+    analysis.analyze(pieces)
+
+    first = build_seed_arrangements(
+        pieces,
+        layout,
+        analysis,
+        random.Random(17),
+        count=3,
+        beam_width=3,
+        candidate_width=5,
+    )
+    second = build_seed_arrangements(
+        pieces,
+        layout,
+        analysis,
+        random.Random(17),
+        count=3,
+        beam_width=3,
+        candidate_width=5,
+    )
+
+    first_ids = [tuple(piece.identifier for piece in seed.pieces) for seed in first]
+    second_ids = [tuple(piece.identifier for piece in seed.pieces) for seed in second]
+    assert first_ids == second_ids
+    assert all(sorted(ids) == list(range(16)) for ids in first_ids)
 
 
 def test_solver_collects_optional_crossover_stats():

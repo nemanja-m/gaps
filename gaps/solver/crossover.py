@@ -15,6 +15,10 @@ type Candidate = tuple[float, int, int, int, int, int, Direction]
 
 SHARED_PIECE_PRIORITY = -10.0
 BUDDY_PIECE_PRIORITY = -1.0
+CONFIDENCE_PRIORITY_WEIGHT = 0.02
+MIN_BLOCK_CONFIDENCE = 0.02
+MAX_BLOCK_SIDE = 4
+BLOCK_TRIALS = 4
 
 
 @dataclass(slots=True)
@@ -30,6 +34,8 @@ class CrossoverStats:
     best_match_calls: int = 0
     best_match_scanned: int = 0
     validity_checks: int = 0
+    preserved_blocks: int = 0
+    preserved_block_pieces: int = 0
 
 
 class Crossover:
@@ -114,8 +120,77 @@ class Crossover:
             self._put_piece_to_kernel(piece_id, position)
 
     def _initialize_kernel(self) -> None:
-        root_piece = self._rng.choice(self._parents[0].pieces)
-        self._put_piece_to_kernel(root_piece.identifier, (0, 0))
+        block = self._select_parent_block()
+        if block is None:
+            root_piece = self._rng.choice(self._parents[0].pieces)
+            self._put_piece_to_kernel(root_piece.identifier, (0, 0))
+            return
+
+        block_pieces, confidence = block
+        self._min_row = 0
+        self._max_row = max(row for _, (row, _) in block_pieces)
+        self._min_column = 0
+        self._max_column = max(column for _, (_, column) in block_pieces)
+        for piece_id, position in block_pieces:
+            self._kernel[piece_id] = position
+            self._taken_positions.add(position)
+        if self._stats is not None:
+            self._stats.preserved_blocks += 1
+            self._stats.preserved_block_pieces += len(block_pieces)
+            self._stats.placed_pieces += len(block_pieces)
+
+        for _, position in block_pieces:
+            for direction, candidate_position in self._available_boundaries(position):
+                self.add_piece_candidate(
+                    self._kernel_piece_at(position), direction, candidate_position
+                )
+
+    def _select_parent_block(
+        self,
+    ) -> tuple[list[tuple[int, Position]], float] | None:
+        rows = self._layout.rows
+        columns = self._layout.columns
+        dimensions = [
+            (height, width)
+            for height in range(1, min(rows, MAX_BLOCK_SIDE) + 1)
+            for width in range(1, min(columns, MAX_BLOCK_SIDE) + 1)
+            if 1 < height * width < self._pieces_length
+        ]
+        if not dimensions:
+            return None
+
+        best_block: tuple[list[tuple[int, Position]], float] | None = None
+        for _ in range(BLOCK_TRIALS):
+            parent = self._parents[self._rng.randrange(len(self._parents))]
+            height, width = self._rng.choice(dimensions)
+            start_row = self._rng.randrange(rows - height + 1)
+            start_column = self._rng.randrange(columns - width + 1)
+            block_pieces: list[tuple[int, Position]] = []
+            confidences: list[float] = []
+            for row in range(height):
+                for column in range(width):
+                    piece_id = parent[row + start_row][column + start_column].identifier
+                    block_pieces.append((piece_id, (row, column)))
+                    if column + 1 < width:
+                        confidences.append(
+                            self._analysis.confidence(piece_id, Direction.RIGHT)
+                        )
+                    if row + 1 < height:
+                        confidences.append(
+                            self._analysis.confidence(piece_id, Direction.BOTTOM)
+                        )
+            confidence = sum(confidences) / len(confidences)
+            if confidence < MIN_BLOCK_CONFIDENCE:
+                continue
+            if best_block is None or confidence > best_block[1]:
+                best_block = (block_pieces, confidence)
+        return best_block
+
+    def _kernel_piece_at(self, position: Position) -> int:
+        for piece_id, piece_position in self._kernel.items():
+            if piece_position == position:
+                return piece_id
+        raise RuntimeError("kernel position is not occupied")
 
     def _put_piece_to_kernel(self, piece_id: int, position: Position) -> None:
         if self._stats is not None:
@@ -190,7 +265,9 @@ class Crossover:
                 self._stats.best_match_scanned += 1
             if self._is_valid_piece(candidate_piece):
                 self._match_cursors[key] = cursor
-                return candidate_piece, cost
+                confidence = self._analysis.confidence(piece_id, direction)
+                priority = cost - CONFIDENCE_PRIORITY_WEIGHT * confidence
+                return candidate_piece, priority
             cursor += 1
         self._match_cursors[key] = cursor
         return None, None

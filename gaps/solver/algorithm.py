@@ -5,11 +5,157 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
-from gaps.domain import Arrangement, Image, Piece, PuzzleLayout
+from gaps.domain import (
+    Arrangement,
+    Direction,
+    EdgeAxis,
+    Image,
+    Piece,
+    PuzzleLayout,
+)
 from gaps.imaging.transforms import flatten_image
 from gaps.solver.analysis import EdgeCostTable
 from gaps.solver.crossover import Crossover, CrossoverStats
 from gaps.solver.selection import tournament_selection
+
+
+@dataclass(frozen=True, slots=True)
+class _BeamState:
+    identifiers: tuple[int, ...]
+    used: frozenset[int]
+    priority: float
+
+
+def _seed_position_priority(
+    identifiers: tuple[int, ...],
+    candidate_id: int,
+    layout: PuzzleLayout,
+    analysis: EdgeCostTable,
+    confidence_weight: float,
+    border_weight: float,
+) -> float:
+    row, column = divmod(len(identifiers), layout.columns)
+    priority = 0.0
+    confidence = 0.0
+
+    if column > 0:
+        left_id = identifiers[-1]
+        priority += analysis.cost((left_id, candidate_id), EdgeAxis.HORIZONTAL)
+        confidence += analysis.confidence(left_id, Direction.RIGHT)
+    if row > 0:
+        above_id = identifiers[-layout.columns]
+        priority += analysis.cost((above_id, candidate_id), EdgeAxis.VERTICAL)
+        confidence += analysis.confidence(above_id, Direction.BOTTOM)
+
+    if border_weight:
+        if row == 0:
+            priority -= border_weight * analysis.best_cost(candidate_id, Direction.TOP)
+        if row == layout.rows - 1:
+            priority -= border_weight * analysis.best_cost(
+                candidate_id, Direction.BOTTOM
+            )
+        if column == 0:
+            priority -= border_weight * analysis.best_cost(candidate_id, Direction.LEFT)
+        if column == layout.columns - 1:
+            priority -= border_weight * analysis.best_cost(
+                candidate_id, Direction.RIGHT
+            )
+
+    return priority - confidence_weight * confidence
+
+
+def build_seed_arrangements(
+    pieces: Sequence[Piece],
+    layout: PuzzleLayout,
+    analysis: EdgeCostTable,
+    rng: random.Random,
+    count: int,
+    beam_width: int = 4,
+    candidate_width: int = 8,
+    confidence_weight: float = 0.02,
+    border_weight: float = 0.0,
+) -> list[Arrangement]:
+    """Build valid arrangements using confidence-aware row-major beam search."""
+    if count <= 0 or not pieces:
+        return []
+    if beam_width <= 0:
+        raise ValueError("beam_width must be positive")
+    if candidate_width <= 0:
+        raise ValueError("candidate_width must be positive")
+    if confidence_weight < 0.0:
+        raise ValueError("confidence_weight must not be negative")
+    if border_weight < 0.0:
+        raise ValueError("border_weight must not be negative")
+
+    pieces_by_id = {piece.identifier: piece for piece in pieces}
+    piece_ids = tuple(pieces_by_id)
+    seed_count = min(count, len(piece_ids))
+    anchors = rng.sample(piece_ids, seed_count)
+    states = [_BeamState((anchor,), frozenset((anchor,)), 0.0) for anchor in anchors]
+    effective_beam_width = max(beam_width, seed_count)
+
+    for _ in range(1, layout.piece_count):
+        expanded: list[_BeamState] = []
+        for state in states:
+            candidates = [
+                piece_id for piece_id in piece_ids if piece_id not in state.used
+            ]
+            candidates.sort(
+                key=lambda candidate_id: (
+                    _seed_position_priority(
+                        state.identifiers,
+                        candidate_id,
+                        layout,
+                        analysis,
+                        confidence_weight,
+                        border_weight,
+                    ),
+                    candidate_id,
+                )
+            )
+            for candidate_id in candidates[:candidate_width]:
+                priority = _seed_position_priority(
+                    state.identifiers,
+                    candidate_id,
+                    layout,
+                    analysis,
+                    confidence_weight,
+                    border_weight,
+                )
+                expanded.append(
+                    _BeamState(
+                        state.identifiers + (candidate_id,),
+                        state.used | {candidate_id},
+                        state.priority + priority,
+                    )
+                )
+
+        states = sorted(
+            expanded,
+            key=lambda state: (state.priority, state.identifiers),
+        )[:effective_beam_width]
+        if not states:
+            break
+
+    seeds: list[Arrangement] = []
+    seen: set[tuple[int, ...]] = set()
+    for state in sorted(states, key=lambda item: (item.priority, item.identifiers)):
+        if len(state.identifiers) != layout.piece_count:
+            continue
+        if state.identifiers in seen:
+            continue
+        seen.add(state.identifiers)
+        seeds.append(
+            Arrangement(
+                [pieces_by_id[piece_id] for piece_id in state.identifiers],
+                layout,
+            )
+        )
+        if len(seeds) == count:
+            break
+
+    return seeds
+
 
 ProgressCallback = Callable[[str, int, int], None]
 GenerationCallback = Callable[[int, Arrangement], None]
@@ -236,6 +382,11 @@ class GeneticAlgorithm:
         max_restarts: int = 2,
         restart_threshold: int | None = None,
         tournament_size: int = 3,
+        seed_fraction: float = 0.25,
+        seed_beam_width: int = 4,
+        seed_candidate_width: int = 8,
+        seed_confidence_weight: float = 0.02,
+        seed_border_weight: float = 0.0,
     ) -> None:
         if population_size <= 0:
             raise ValueError("population_size must be positive")
@@ -257,6 +408,16 @@ class GeneticAlgorithm:
             raise ValueError("restart_threshold must be positive")
         if tournament_size <= 0:
             raise ValueError("tournament_size must be positive")
+        if not 0.0 <= seed_fraction <= 1.0:
+            raise ValueError("seed_fraction must be between zero and one")
+        if seed_beam_width <= 0:
+            raise ValueError("seed_beam_width must be positive")
+        if seed_candidate_width <= 0:
+            raise ValueError("seed_candidate_width must be positive")
+        if seed_confidence_weight < 0.0:
+            raise ValueError("seed_confidence_weight must not be negative")
+        if seed_border_weight < 0.0:
+            raise ValueError("seed_border_weight must not be negative")
         if collect_stats and workers > 1:
             raise ValueError("collect_stats is only supported with one worker")
 
@@ -278,6 +439,12 @@ class GeneticAlgorithm:
             1, self.TERMINATION_THRESHOLD // 2
         )
         self._tournament_size = tournament_size
+        self._seed_fraction = seed_fraction
+        self._seed_beam_width = seed_beam_width
+        self._seed_candidate_width = seed_candidate_width
+        self._seed_confidence_weight = seed_confidence_weight
+        self._seed_border_weight = seed_border_weight
+        self._population_initialized = False
         self._crossover_stats = CrossoverStats() if collect_stats else None
         self._population = [
             Arrangement.random(pieces, layout, self._rng)
@@ -296,6 +463,7 @@ class GeneticAlgorithm:
     ) -> SolveResult:
         """Run evolution and return the best valid arrangement found."""
         self._analysis.analyze(self._pieces, progress=progress)
+        self._initialize_population()
         best_arrangement = self._best_arrangement()
         best_score = self._score(best_arrangement)
         stagnant_generations = 0
@@ -347,6 +515,38 @@ class GeneticAlgorithm:
             best_score,
             False,
         )
+
+    def _initialize_population(self) -> None:
+        if self._population_initialized:
+            return
+        self._population_initialized = True
+        if self._seed_fraction == 0.0:
+            return
+
+        try:
+            seed_count = min(
+                8,
+                max(1, int(self._population_size * self._seed_fraction)),
+                max(1, 1024 // self._layout.piece_count),
+            )
+        except (TypeError, ValueError, OverflowError) as error:
+            raise ValueError("could not calculate seed count") from error
+
+        try:
+            seeds = build_seed_arrangements(
+                self._pieces,
+                self._layout,
+                self._analysis,
+                self._rng,
+                count=seed_count,
+                beam_width=self._seed_beam_width,
+                candidate_width=self._seed_candidate_width,
+                confidence_weight=self._seed_confidence_weight,
+                border_weight=self._seed_border_weight,
+            )
+        except (KeyError, ValueError):
+            return
+        self._population = (seeds + self._population)[: self._population_size]
 
     def _create_executor(self) -> ProcessPoolExecutor | None:
         if self._workers == 1:
