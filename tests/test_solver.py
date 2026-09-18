@@ -1,10 +1,12 @@
 import random
 
 import numpy as np
+import pytest
 
 from gaps.domain import PuzzleLayout
 from gaps.imaging.transforms import assemble_image, flatten_image
 from gaps.solver.algorithm import GeneticAlgorithm
+from gaps.solver.analysis import EdgeCostTable
 
 
 def test_solver_returns_result_and_reports_progress():
@@ -22,6 +24,30 @@ def test_solver_returns_result_and_reports_progress():
     assert result.best_score > 0
     assert any(phase == "analysis" for phase, _, _ in events)
     assert any(phase == "evolution" for phase, _, _ in events)
+
+
+def test_phase_one_search_keeps_global_best_valid_after_restart():
+    image = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)
+    result = GeneticAlgorithm(
+        image,
+        piece_size=2,
+        population_size=8,
+        generations=8,
+        rng=random.Random(31),
+        mutation_rate=0.2,
+        local_search_steps=3,
+        local_search_candidates=6,
+        max_restarts=1,
+        restart_threshold=1,
+    ).solve()
+
+    pieces, _ = flatten_image(image, piece_size=2, indexed=True)
+    analysis = EdgeCostTable()
+    analysis.analyze(pieces)
+    identifiers = [piece.identifier for piece in result.arrangement.pieces]
+
+    assert result.best_score == pytest.approx(result.arrangement.score(analysis))
+    assert sorted(identifiers) == list(range(16))
 
 
 def test_solver_collects_optional_crossover_stats():

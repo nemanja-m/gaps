@@ -29,6 +29,22 @@ def test_arrangement_incremental_swap_matches_full_score():
     assert arrangement.score(analysis) == expected
 
 
+def test_arrangement_incremental_reordering_matches_full_score():
+    image = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)
+    pieces, layout = flatten_image(image, piece_size=2, indexed=True)
+    analysis = EdgeCostTable()
+    analysis.analyze(pieces)
+    arrangement = Arrangement.random(pieces, layout, random.Random(9))
+    arrangement.score(analysis)
+
+    arrangement.relocate(0, 7, cost_lookup=analysis)
+    arrangement.swap_blocks(1, 5, 2, cost_lookup=analysis)
+
+    expected = Arrangement(list(arrangement.pieces), layout).score(analysis.cost)
+    assert arrangement.score(analysis) == expected
+    assert sorted(piece.identifier for piece in arrangement.pieces) == list(range(16))
+
+
 def test_arrangement_preserves_indexed_pieces_and_layout():
     image = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
     pieces, layout = flatten_image(image, piece_size=2, indexed=True)

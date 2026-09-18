@@ -248,6 +248,119 @@ class Arrangement:
             self._cached_score = None
             self._cached_total_cost = None
 
+    def relocate(
+        self,
+        source_index: int,
+        target_index: int,
+        cost_lookup: CostLookup | None = None,
+    ) -> None:
+        """Move one piece to another position while preserving the permutation."""
+        if source_index == target_index:
+            return
+        piece_count = len(self.pieces)
+        if not 0 <= source_index < piece_count or not 0 <= target_index < piece_count:
+            raise IndexError("piece index out of range")
+
+        cached_total_cost = self._cached_total_cost
+        affected_seams = (
+            self._affected_seams_for_range(source_index, target_index)
+            if cached_total_cost is not None and cost_lookup is not None
+            else set()
+        )
+        old_local_cost = (
+            sum(self._seam_cost(seam, cost_lookup) for seam in affected_seams)
+            if cost_lookup is not None
+            else 0.0
+        )
+
+        piece = self.pieces.pop(source_index)
+        self.pieces.insert(target_index, piece)
+        start, stop = sorted((source_index, target_index))
+        for index in range(start, stop + 1):
+            self._piece_mapping[self.pieces[index].identifier] = index
+        self._edge_cache = None
+
+        if cached_total_cost is not None and cost_lookup is not None:
+            new_local_cost = sum(
+                self._seam_cost(seam, cost_lookup) for seam in affected_seams
+            )
+            self._cached_total_cost = (
+                cached_total_cost - old_local_cost + new_local_cost
+            )
+            self._cached_score = self._score_from_total_cost(self._cached_total_cost)
+        else:
+            self._cached_score = None
+            self._cached_total_cost = None
+
+    def swap_blocks(
+        self,
+        first_start: int,
+        second_start: int,
+        block_size: int,
+        cost_lookup: CostLookup | None = None,
+    ) -> None:
+        """Exchange two non-overlapping, equally sized contiguous blocks."""
+        piece_count = len(self.pieces)
+        if block_size <= 0:
+            raise ValueError("block_size must be positive")
+        if (
+            not 0 <= first_start < piece_count
+            or not 0 <= second_start < piece_count
+            or first_start + block_size > piece_count
+            or second_start + block_size > piece_count
+        ):
+            raise IndexError("block index out of range")
+        if first_start == second_start:
+            return
+        if first_start > second_start:
+            first_start, second_start = second_start, first_start
+        if first_start + block_size > second_start:
+            raise ValueError("blocks must not overlap")
+
+        cached_total_cost = self._cached_total_cost
+        affected_seams = (
+            self._affected_seams_for_range(
+                first_start,
+                second_start + block_size - 1,
+            )
+            if cached_total_cost is not None and cost_lookup is not None
+            else set()
+        )
+        old_local_cost = (
+            sum(self._seam_cost(seam, cost_lookup) for seam in affected_seams)
+            if cost_lookup is not None
+            else 0.0
+        )
+
+        first_block = self.pieces[first_start : first_start + block_size]
+        second_block = self.pieces[second_start : second_start + block_size]
+        self.pieces[first_start : first_start + block_size] = second_block
+        self.pieces[second_start : second_start + block_size] = first_block
+        for index in range(first_start, second_start + block_size):
+            self._piece_mapping[self.pieces[index].identifier] = index
+        self._edge_cache = None
+
+        if cached_total_cost is not None and cost_lookup is not None:
+            new_local_cost = sum(
+                self._seam_cost(seam, cost_lookup) for seam in affected_seams
+            )
+            self._cached_total_cost = (
+                cached_total_cost - old_local_cost + new_local_cost
+            )
+            self._cached_score = self._score_from_total_cost(self._cached_total_cost)
+        else:
+            self._cached_score = None
+            self._cached_total_cost = None
+
+    def _affected_seams_for_range(
+        self, first_index: int, second_index: int
+    ) -> set[tuple[EdgeAxis, int, int]]:
+        start, stop = sorted((first_index, second_index))
+        seams: set[tuple[EdgeAxis, int, int]] = set()
+        for index in range(start, stop + 1):
+            seams.update(self._affected_seams(index, index))
+        return seams
+
     def piece_by_id(self, identifier: int) -> Piece:
         return self.pieces[self._piece_mapping[identifier]]
 
