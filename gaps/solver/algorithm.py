@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import random
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor
@@ -171,6 +172,7 @@ class _WorkerContext:
     mutation_rate: float
     local_search_steps: int
     local_search_candidates: int
+    repair_steps: int
 
 
 _WORKER_CONTEXT: _WorkerContext | None = None
@@ -183,6 +185,7 @@ def initialize_worker(
     mutation_rate: float,
     local_search_steps: int = 1,
     local_search_candidates: int = 4,
+    repair_steps: int = 1,
 ) -> None:
     """Initialize read-only puzzle state once in a process-pool worker."""
     global _WORKER_CONTEXT
@@ -193,6 +196,7 @@ def initialize_worker(
         mutation_rate=mutation_rate,
         local_search_steps=local_search_steps,
         local_search_candidates=local_search_candidates,
+        repair_steps=repair_steps,
     )
 
 
@@ -283,6 +287,64 @@ def _local_search(
         _apply_move(arrangement, best_move, analysis)
 
 
+def _repair_window_indices(
+    arrangement: Arrangement,
+    rng: random.Random,
+) -> tuple[int, ...] | None:
+    rows = arrangement.layout.rows
+    columns = arrangement.layout.columns
+    if rows >= 2 and columns >= 2:
+        row = rng.randrange(rows - 1)
+        column = rng.randrange(columns - 1)
+        return (
+            row * columns + column,
+            row * columns + column + 1,
+            (row + 1) * columns + column,
+            (row + 1) * columns + column + 1,
+        )
+    if columns >= 3:
+        start = rng.randrange(columns - 2)
+        return tuple(start + offset for offset in range(3))
+    if rows >= 3:
+        start = rng.randrange(rows - 2)
+        return tuple((start + offset) * columns for offset in range(3))
+    return None
+
+
+def _constraint_repair(
+    arrangement: Arrangement,
+    analysis: EdgeCostTable,
+    rng: random.Random,
+    steps: int,
+) -> None:
+    """Exhaustively repair small windows while preserving all piece assignments."""
+    if steps <= 0:
+        return
+
+    for _ in range(steps):
+        indices = _repair_window_indices(arrangement, rng)
+        if indices is None:
+            return
+        original = tuple(arrangement.pieces[index] for index in indices)
+        original_ids = tuple(piece.identifier for piece in original)
+        current_score = arrangement.score(analysis)
+        best_score = current_score
+        best_order: tuple[Piece, ...] | None = None
+        for candidate in itertools.permutations(original):
+            candidate_ids = tuple(piece.identifier for piece in candidate)
+            if candidate_ids == original_ids:
+                continue
+            arrangement.replace_positions(indices, candidate, cost_lookup=analysis)
+            candidate_score = arrangement.score(analysis)
+            arrangement.replace_positions(indices, original, cost_lookup=analysis)
+            if candidate_score > best_score:
+                best_score = candidate_score
+                best_order = candidate
+        if best_order is None:
+            return
+        arrangement.replace_positions(indices, best_order, cost_lookup=analysis)
+
+
 def _mutate_child(
     arrangement: Arrangement,
     analysis: EdgeCostTable,
@@ -290,6 +352,7 @@ def _mutate_child(
     mutation_rate: float,
     local_search_steps: int,
     local_search_candidates: int,
+    repair_steps: int,
 ) -> None:
     if mutation_rate > 0.0 and rng.random() < mutation_rate:
         move = _random_move(len(arrangement.pieces), rng)
@@ -310,6 +373,7 @@ def _mutate_child(
         local_search_steps,
         local_search_candidates,
     )
+    _constraint_repair(arrangement, analysis, rng, repair_steps)
 
 
 def _crossover_child(
@@ -349,6 +413,7 @@ def build_child(task: ChildTask) -> tuple[int, ...]:
         mutation_rate,
         context.local_search_steps,
         context.local_search_candidates,
+        context.repair_steps,
     )
     return tuple(piece.identifier for piece in child.pieces)
 
@@ -379,6 +444,7 @@ class GeneticAlgorithm:
         workers: int = 1,
         local_search_steps: int = 1,
         local_search_candidates: int = 4,
+        repair_steps: int = 1,
         max_restarts: int = 2,
         restart_threshold: int | None = None,
         tournament_size: int = 3,
@@ -402,6 +468,8 @@ class GeneticAlgorithm:
             raise ValueError("local_search_steps must not be negative")
         if local_search_candidates < 0:
             raise ValueError("local_search_candidates must not be negative")
+        if repair_steps < 0:
+            raise ValueError("repair_steps must not be negative")
         if max_restarts < 0:
             raise ValueError("max_restarts must not be negative")
         if restart_threshold is not None and restart_threshold <= 0:
@@ -434,6 +502,7 @@ class GeneticAlgorithm:
         self._workers = workers
         self._local_search_steps = local_search_steps
         self._local_search_candidates = local_search_candidates
+        self._repair_steps = repair_steps
         self._max_restarts = max_restarts
         self._restart_threshold = restart_threshold or max(
             1, self.TERMINATION_THRESHOLD // 2
@@ -561,6 +630,7 @@ class GeneticAlgorithm:
                 self._mutation_rate,
                 self._local_search_steps,
                 self._local_search_candidates,
+                self._repair_steps,
             ),
         )
 
@@ -637,6 +707,7 @@ class GeneticAlgorithm:
             mutation_rate,
             self._local_search_steps,
             self._local_search_candidates,
+            self._repair_steps,
         )
 
     def _adaptive_mutation_rate(self, stagnant_generations: int) -> float:

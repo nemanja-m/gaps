@@ -39,6 +39,8 @@ def test_arrangement_incremental_reordering_matches_full_score():
 
     arrangement.relocate(0, 7, cost_lookup=analysis)
     arrangement.swap_blocks(1, 5, 2, cost_lookup=analysis)
+    selected = tuple(arrangement.pieces[index] for index in (0, 1, 3, 4))
+    arrangement.replace_positions((0, 1, 3, 4), selected[::-1], cost_lookup=analysis)
 
     expected = Arrangement(list(arrangement.pieces), layout).score(analysis.cost)
     assert arrangement.score(analysis) == expected

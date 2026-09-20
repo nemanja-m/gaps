@@ -10,6 +10,7 @@ _HUBER_BETA = 0.01
 _BOUNDARY_WEIGHT = 0.60
 _NORMAL_GRADIENT_WEIGHT = 0.25
 _TANGENT_GRADIENT_WEIGHT = 0.15
+_MULTISCALE_WEIGHT = 0.15
 _PAIRWISE_BLOCK_SIZE = 32
 
 
@@ -45,6 +46,18 @@ def _huber_mean_batch(difference: np.ndarray, scale: float) -> np.ndarray:
         error - 0.5 * _HUBER_BETA,
     )
     return np.mean(loss, axis=(-2, -1))
+
+
+def _coarse_line(line: np.ndarray) -> np.ndarray | None:
+    """Pool adjacent edge samples to provide a noise-resistant scale."""
+    length = line.shape[-2]
+    if length < 4:
+        return None
+    paired_length = length - length % 2
+    coarse = (line[..., :paired_length:2, :] + line[..., 1:paired_length:2, :]) * 0.5
+    if paired_length < length:
+        coarse = np.concatenate((coarse, line[..., -1:, :]), axis=-2)
+    return coarse
 
 
 def _edge_lines(
@@ -111,6 +124,8 @@ def pairwise_dissimilarity_from_channels(
     second_normal = None if second_inner is None else second_inner - second_edge
     first_tangent = np.diff(first_edge, axis=1) if first_edge.shape[1] > 1 else None
     second_tangent = np.diff(second_edge, axis=1) if second_edge.shape[1] > 1 else None
+    first_coarse = _coarse_line(first_edge)
+    second_coarse = _coarse_line(second_edge)
     costs = np.empty((piece_count, piece_count), dtype=np.float32)
 
     for start in range(0, piece_count, block_size):
@@ -143,11 +158,24 @@ def pairwise_dissimilarity_from_channels(
                 scale=510.0,
             )
 
-        costs[start:stop] = (
+        if first_coarse is None or second_coarse is None:
+            coarse_cost = 0.0
+        else:
+            first_coarse_block = first_coarse[start:stop, np.newaxis, :, :]
+            second_coarse_block = second_coarse[np.newaxis, :, :, :]
+            coarse_cost = _huber_mean_batch(
+                first_coarse_block - second_coarse_block,
+                scale=255.0,
+            )
+
+        base_cost = (
             _BOUNDARY_WEIGHT * boundary_cost
             + _NORMAL_GRADIENT_WEIGHT * normal_cost
             + _TANGENT_GRADIENT_WEIGHT * tangent_cost
         )
+        costs[start:stop] = (
+            1.0 - _MULTISCALE_WEIGHT
+        ) * base_cost + _MULTISCALE_WEIGHT * coarse_cost
         if progress is not None and piece_count > 1:
             progress(min(stop, piece_count - 1), piece_count - 1)
 
@@ -207,10 +235,23 @@ def dissimilarity_measure(
                 scale=510.0,
             )
 
-        return float(
+        first_coarse = _coarse_line(first_edge)
+        second_coarse = _coarse_line(second_edge)
+        if first_coarse is None or second_coarse is None:
+            coarse_cost = 0.0
+        else:
+            coarse_cost = _huber_mean(
+                first_coarse - second_coarse,
+                scale=255.0,
+            )
+
+        base_cost = (
             _BOUNDARY_WEIGHT * boundary_cost
             + _NORMAL_GRADIENT_WEIGHT * normal_gradient_cost
             + _TANGENT_GRADIENT_WEIGHT * tangent_gradient_cost
+        )
+        return float(
+            (1.0 - _MULTISCALE_WEIGHT) * base_cost + _MULTISCALE_WEIGHT * coarse_cost
         )
     except (TypeError, ValueError) as error:
         raise ValueError("pieces must contain compatible numeric image data") from error

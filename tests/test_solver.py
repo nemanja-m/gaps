@@ -37,6 +37,7 @@ def test_phase_one_search_keeps_global_best_valid_after_restart():
         mutation_rate=0.2,
         local_search_steps=3,
         local_search_candidates=6,
+        repair_steps=2,
         max_restarts=1,
         restart_threshold=1,
     ).solve()

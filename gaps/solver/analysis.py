@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, SupportsFloat
 
 import numpy as np
@@ -172,3 +173,77 @@ class EdgeCostTable:
         second_cost = matches[1][1]
         margin = max(0.0, second_cost - best_cost)
         return min(1.0, margin / max(abs(second_cost), 1e-6))
+
+
+@dataclass(frozen=True, slots=True)
+class ArrangementMetrics:
+    """Ground-truth quality metrics for a known piece ordering."""
+
+    position_accuracy: float
+    horizontal_adjacency_accuracy: float
+    vertical_adjacency_accuracy: float
+    adjacency_accuracy: float
+    exact: bool
+
+
+def evaluate_arrangement(
+    arrangement: Arrangement,
+    expected_identifiers: Sequence[int],
+) -> ArrangementMetrics:
+    """Compare an arrangement with expected row-major piece identifiers."""
+    expected = tuple(expected_identifiers)
+    actual = tuple(piece.identifier for piece in arrangement.pieces)
+    if len(expected) != arrangement.layout.piece_count:
+        raise ValueError("expected identifiers do not match the puzzle layout")
+    if len(set(expected)) != len(expected):
+        raise ValueError("expected identifiers must be unique")
+    if len(actual) != len(expected):
+        raise ValueError("arrangement does not match the expected piece count")
+
+    position_matches = sum(
+        actual_id == expected_id for actual_id, expected_id in zip(actual, expected)
+    )
+    position_accuracy = position_matches / len(expected) if expected else 1.0
+
+    columns = arrangement.layout.columns
+    rows = arrangement.layout.rows
+    horizontal_total = rows * max(0, columns - 1)
+    vertical_total = max(0, rows - 1) * columns
+    horizontal_matches = 0
+    vertical_matches = 0
+    for row in range(rows):
+        row_start = row * columns
+        for column in range(columns - 1):
+            actual_index = row_start + column
+            if (
+                actual[actual_index] == expected[actual_index]
+                and actual[actual_index + 1] == expected[actual_index + 1]
+            ):
+                horizontal_matches += 1
+    for row in range(rows - 1):
+        row_start = row * columns
+        for column in range(columns):
+            actual_index = row_start + column
+            if (
+                actual[actual_index] == expected[actual_index]
+                and actual[actual_index + columns] == expected[actual_index + columns]
+            ):
+                vertical_matches += 1
+
+    horizontal_accuracy = (
+        horizontal_matches / horizontal_total if horizontal_total else 1.0
+    )
+    vertical_accuracy = vertical_matches / vertical_total if vertical_total else 1.0
+    adjacency_total = horizontal_total + vertical_total
+    adjacency_accuracy = (
+        (horizontal_matches + vertical_matches) / adjacency_total
+        if adjacency_total
+        else 1.0
+    )
+    return ArrangementMetrics(
+        position_accuracy=position_accuracy,
+        horizontal_adjacency_accuracy=horizontal_accuracy,
+        vertical_adjacency_accuracy=vertical_accuracy,
+        adjacency_accuracy=adjacency_accuracy,
+        exact=actual == expected,
+    )

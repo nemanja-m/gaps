@@ -352,6 +352,59 @@ class Arrangement:
             self._cached_score = None
             self._cached_total_cost = None
 
+    def replace_positions(
+        self,
+        indices: Sequence[int],
+        pieces: Sequence[Piece],
+        cost_lookup: CostLookup | None = None,
+    ) -> None:
+        """Reorder a fixed set of positions without changing the permutation."""
+        positions = tuple(indices)
+        replacements = tuple(pieces)
+        if len(positions) != len(replacements) or not positions:
+            raise ValueError("positions and pieces must have the same non-zero length")
+        if len(set(positions)) != len(positions):
+            raise ValueError("positions must be unique")
+        if any(index < 0 or index >= len(self.pieces) for index in positions):
+            raise IndexError("piece index out of range")
+        current_ids = {self.pieces[index].identifier for index in positions}
+        replacement_ids = {piece.identifier for piece in replacements}
+        if current_ids != replacement_ids:
+            raise ValueError("replacement pieces must match the selected positions")
+        if all(
+            self.pieces[index] is piece for index, piece in zip(positions, replacements)
+        ):
+            return
+
+        cached_total_cost = self._cached_total_cost
+        affected_seams = (
+            {seam for index in positions for seam in self._affected_seams(index, index)}
+            if cached_total_cost is not None and cost_lookup is not None
+            else set()
+        )
+        old_local_cost = (
+            sum(self._seam_cost(seam, cost_lookup) for seam in affected_seams)
+            if cost_lookup is not None
+            else 0.0
+        )
+
+        for index, piece in zip(positions, replacements):
+            self.pieces[index] = piece
+            self._piece_mapping[piece.identifier] = index
+        self._edge_cache = None
+
+        if cached_total_cost is not None and cost_lookup is not None:
+            new_local_cost = sum(
+                self._seam_cost(seam, cost_lookup) for seam in affected_seams
+            )
+            self._cached_total_cost = (
+                cached_total_cost - old_local_cost + new_local_cost
+            )
+            self._cached_score = self._score_from_total_cost(self._cached_total_cost)
+        else:
+            self._cached_score = None
+            self._cached_total_cost = None
+
     def _affected_seams_for_range(
         self, first_index: int, second_index: int
     ) -> set[tuple[EdgeAxis, int, int]]:

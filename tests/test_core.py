@@ -3,10 +3,10 @@ from typing import cast
 import numpy as np
 import pytest
 
-from gaps.domain import Direction, EdgeAxis, Piece
+from gaps.domain import Arrangement, Direction, EdgeAxis, Piece
 from gaps.imaging.io import read_image, write_image
 from gaps.imaging.transforms import assemble_image, flatten_image
-from gaps.solver.analysis import EdgeCostTable
+from gaps.solver.analysis import EdgeCostTable, evaluate_arrangement
 from gaps.solver.fitness import dissimilarity_measure
 
 
@@ -27,6 +27,23 @@ def test_grayscale_flatten_and_assemble_round_trip():
     assert (layout.rows, layout.columns) == (2, 3)
     assert pieces[0].shape == (2, 2)
     assert np.array_equal(assemble_image(pieces, layout), image)
+
+
+def test_arrangement_metrics_report_positions_and_adjacencies():
+    image = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
+    pieces, layout = flatten_image(image, piece_size=2, indexed=True)
+    arrangement = Arrangement(pieces, layout)
+
+    exact = evaluate_arrangement(arrangement, range(4))
+    assert exact.exact
+    assert exact.position_accuracy == 1.0
+    assert exact.adjacency_accuracy == 1.0
+
+    arrangement.swap(0, 1)
+    partial = evaluate_arrangement(arrangement, range(4))
+    assert not partial.exact
+    assert partial.position_accuracy == pytest.approx(0.5)
+    assert partial.adjacency_accuracy == pytest.approx(0.25)
 
 
 def test_edge_cost_table_is_scoped_to_one_puzzle():

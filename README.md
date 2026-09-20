@@ -105,14 +105,15 @@ Run `uv run gaps run --help` for detailed help.
 
 The solver assumes a known rectangular layout and fixed piece orientation. It:
 
-1. extracts directed horizontal and vertical edge costs using robust pixel and
-   gradient comparisons;
+1. extracts directed horizontal and vertical edge costs using robust multi-scale
+   pixel and gradient comparisons;
 2. mixes confidence-aware beam-searched arrangements with random arrangements
    to initialize the population;
 3. evolves valid permutations with tournament selection and crossover that
    preserves strong parent edges and high-confidence blocks;
 4. applies adaptive mutation, local search over swaps/relocations/block moves,
-   elitism, and stagnation-triggered restarts; and
+   exact small-window constraint repair, elitism, and stagnation-triggered
+   restarts; and
 5. returns the best valid arrangement found, with optional process workers for
    child generation.
 
