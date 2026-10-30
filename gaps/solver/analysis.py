@@ -8,6 +8,7 @@ import numpy as np
 
 from gaps.domain import Direction, EdgeAxis, Piece
 from gaps.solver.fitness import (
+    _PAIRWISE_BLOCK_SIZE,
     pairwise_dissimilarity_from_channels,
     prepare_piece_channels,
 )
@@ -63,13 +64,20 @@ class EdgeCostTable:
 
         channels = prepare_piece_channels(pieces)
         costs = np.empty((piece_count, piece_count, 2), dtype=np.float32)
+        horizontal_channels = channels
+        horizontal_axis = EdgeAxis.HORIZONTAL
+        if channels.shape[2]:
+            horizontal_channels = np.ascontiguousarray(channels.swapaxes(1, 2))
+            horizontal_axis = EdgeAxis.VERTICAL
         costs[:, :, 0] = pairwise_dissimilarity_from_channels(
-            channels,
-            EdgeAxis.HORIZONTAL,
+            horizontal_channels,
+            horizontal_axis,
+            block_size=3,
         )
         costs[:, :, 1] = pairwise_dissimilarity_from_channels(
             channels,
             EdgeAxis.VERTICAL,
+            block_size=2 if progress is None else _PAIRWISE_BLOCK_SIZE,
             progress=(
                 None
                 if progress is None
@@ -79,26 +87,21 @@ class EdgeCostTable:
         self._costs = costs
 
         ids = self._piece_ids.tolist()
-        for index, piece_id in enumerate(ids):
-            matches_by_direction = self._best_matches[piece_id]
-            directional_costs = {
-                Direction.RIGHT: costs[index, :, _AXIS_INDEX[EdgeAxis.HORIZONTAL]],
-                Direction.LEFT: costs[:, index, _AXIS_INDEX[EdgeAxis.HORIZONTAL]],
-                Direction.BOTTOM: costs[index, :, _AXIS_INDEX[EdgeAxis.VERTICAL]],
-                Direction.TOP: costs[:, index, _AXIS_INDEX[EdgeAxis.VERTICAL]],
-            }
-            for direction, match_costs in directional_costs.items():
+        directional_costs = {
+            Direction.RIGHT: np.ascontiguousarray(costs[:, :, 0]),
+            Direction.LEFT: np.ascontiguousarray(costs[:, :, 0].T),
+            Direction.BOTTOM: np.ascontiguousarray(costs[:, :, 1]),
+            Direction.TOP: np.ascontiguousarray(costs[:, :, 1].T),
+        }
+        for direction, direction_costs in directional_costs.items():
+            for index, piece_id in enumerate(ids):
+                matches_by_direction = self._best_matches[piece_id]
+                match_costs = direction_costs[index]
                 order = np.argsort(match_costs, kind="stable")
-                matches: list[tuple[int, float]] = []
-                for candidate_index in order:
-                    if candidate_index != index:
-                        matches.append(
-                            (
-                                ids[candidate_index],
-                                _safe_float(match_costs[candidate_index]),
-                            )
-                        )
-                matches_by_direction[direction] = matches
+                order = order[order != index]
+                matches_by_direction[direction] = list(
+                    zip(self._piece_ids[order].tolist(), match_costs[order].tolist())
+                )
 
     def __call__(self, ids: tuple[int, int], axis: EdgeAxis) -> float:
         return self.cost(ids, axis)
